@@ -58,8 +58,8 @@ function AppWithAuth() {
     >
       <Nav />
       <Routes>
-        <Route path="/sign-in" element={<AuthPage path="sign-in" />} />
-        <Route path="/sign-up" element={<AuthPage path="sign-up" />} />
+        <Route path="/auth/sign-in" element={<AuthPage path="sign-in" />} />
+        <Route path="/auth/sign-up" element={<AuthPage path="sign-up" />} />
         <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/" element={<ProtectedRoute><FridgeView /></ProtectedRoute>} />
         <Route path="/meal" element={<ProtectedRoute><MealSuggest /></ProtectedRoute>} />
