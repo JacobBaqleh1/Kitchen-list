@@ -1,0 +1,25 @@
+{
+  "name": "kitchenlist-server",
+  "version": "1.0.0",
+  "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js",
+    "db:push": "drizzle-kit push"
+  },
+  "dependencies": {
+    "@anthropic-ai/bedrock-sdk": "^0.29.2",
+    "@anthropic-ai/sdk": "latest",
+    "@neondatabase/serverless": "latest",
+    "cors": "latest",
+    "dotenv": "latest",
+    "drizzle-orm": "latest",
+    "express": "latest"
+  },
+  "devDependencies": {
+    "drizzle-kit": "latest"
+  }
+}
