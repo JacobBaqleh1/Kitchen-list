@@ -37,13 +37,3 @@ npm install
 # create a .env with VITE_API_URL pointing to your local server
 npm run dev
 ```
-
-## Environment Variables
-
-| Variable | Where | Purpose |
-|---|---|---|
-| `DATABASE_URL` | server | Neon Postgres connection string |
-| `AWS_ACCESS_KEY_ID` | server | AWS credentials for Bedrock |
-| `AWS_SECRET_ACCESS_KEY` | server | AWS credentials for Bedrock |
-| `AWS_REGION` | server | Bedrock region (default: us-east-1) |
-| `VITE_API_URL` | client | Base URL for the API |
