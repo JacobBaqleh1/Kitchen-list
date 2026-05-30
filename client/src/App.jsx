@@ -57,6 +57,10 @@ function AuthPage() {
   );
 }
 
+const RouterLink = ({ href, children, ...props }) => (
+  <Link to={href ?? '/'} {...props}>{children}</Link>
+);
+
 function AppWithAuth() {
   const navigate = useNavigate();
   return (
@@ -64,7 +68,7 @@ function AppWithAuth() {
       authClient={auth}
       navigate={navigate}
       replace={(path) => navigate(path, { replace: true })}
-      Link={Link}
+      Link={RouterLink}
       redirectTo="/"
     >
       <Nav />
