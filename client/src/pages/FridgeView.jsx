@@ -80,6 +80,12 @@ export default function FridgeView() {
           Fridge
         </button>
         <button
+          className={`tab-btn ${activeTab === 'freezer' ? 'active' : ''}`}
+          onClick={() => setActiveTab('freezer')}
+        >
+          Freezer
+        </button>
+        <button
           className={`tab-btn ${activeTab === 'pantry' ? 'active' : ''}`}
           onClick={() => setActiveTab('pantry')}
         >

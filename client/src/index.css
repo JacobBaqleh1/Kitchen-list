@@ -22,6 +22,7 @@ body {
   background: var(--bg);
   color: var(--text);
   line-height: 1.5;
+  cursor: default;
 }
 
 /* ===== Nav ===== */
@@ -46,6 +47,9 @@ body {
   font-weight: 700;
   color: var(--green);
   letter-spacing: -.02em;
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
 }
 .nav-links { display: flex; gap: .25rem; }
 .nav-links a {
@@ -56,12 +60,17 @@ body {
   font-size: .9rem;
   font-weight: 500;
   transition: background .15s, color .15s;
+  cursor: pointer;
+  user-select: none;
 }
 .nav-links a:hover { background: var(--green-light); color: var(--green-dark); }
 .nav-links a.active { background: var(--green-light); color: var(--green); }
 
 /* ===== Page ===== */
 .page { max-width: 900px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+@media (max-width: 540px) {
+  .page { padding: 1rem .75rem 2rem; }
+}
 .page-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 1.25rem; color: var(--text); }
 
 /* ===== Meal CTA banner ===== */
@@ -122,24 +131,32 @@ body {
 }
 
 /* ===== Item list & cards ===== */
-.item-list { display: flex; flex-direction: column; gap: .45rem; }
+.item-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: .45rem;
+}
+@media (max-width: 540px) {
+  .item-list { grid-template-columns: 1fr; }
+}
 .item-card {
   background: white;
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: .7rem 1rem;
+  padding: .55rem .75rem;
   display: flex;
   align-items: center;
-  gap: .75rem;
+  gap: .6rem;
   box-shadow: var(--shadow);
   transition: opacity .2s;
+  min-width: 0;
 }
 .item-card.checked { opacity: .55; }
 .item-card.checked .item-name { text-decoration: line-through; color: var(--muted); }
 .item-card.editing { flex-wrap: wrap; }
 .item-checkbox { width: 17px; height: 17px; cursor: pointer; accent-color: var(--green); flex-shrink: 0; }
 .item-info { flex: 1; display: flex; align-items: center; gap: .65rem; flex-wrap: wrap; }
-.item-name { font-weight: 500; font-size: .95rem; color: var(--text); }
+.item-name { font-weight: 500; font-size: .9rem; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .item-qty {
   background: var(--green-light);
   color: var(--green-dark);
@@ -189,7 +206,7 @@ body {
   margin-bottom: 1.25rem;
   box-shadow: var(--shadow);
 }
-.add-form-title { font-weight: 600; font-size: .95rem; margin-bottom: .75rem; }
+.add-form-title { font-weight: 600; font-size: .95rem; margin-bottom: .75rem; color: var(--text); }
 .form-row { display: flex; gap: .5rem; flex-wrap: wrap; align-items: flex-end; }
 .form-group { display: flex; flex-direction: column; gap: .2rem; }
 .form-group label { font-size: .78rem; color: var(--muted); font-weight: 500; }

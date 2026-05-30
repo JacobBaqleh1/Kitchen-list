@@ -13,7 +13,7 @@ function Nav() {
   return (
     <nav className="nav">
       <div className="nav-inner">
-        <span className="nav-brand">KitchenList</span>
+        <Link to="/" className="nav-brand">KitchenList</Link>
         <SignedIn>
           <div className="nav-links">
             <NavLink to="/" end>Fridge &amp; Pantry</NavLink>

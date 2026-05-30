@@ -30,11 +30,13 @@ router.post('/suggest', async (req, res) => {
     const dislikes = prefs?.dislikes || [];
 
     const fridgeItems = unchecked.filter(i => i.location === 'fridge');
+    const freezerItems = unchecked.filter(i => i.location === 'freezer');
     const pantryItems = unchecked.filter(i => i.location === 'pantry');
 
     const fmt = arr => arr.length ? arr.map(i => `${i.quantity}x ${i.name}`).join(', ') : 'none';
 
     const userMessage = `Fridge contains: ${fmt(fridgeItems)}
+Freezer contains: ${fmt(freezerItems)}
 Pantry contains: ${fmt(pantryItems)}
 Allergies: ${allergies.length ? allergies.join(', ') : 'none'}
 Dislikes: ${dislikes.length ? dislikes.join(', ') : 'none'}${userPrompt ? `\nExtra request: ${userPrompt}` : ''}

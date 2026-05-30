@@ -68,6 +68,7 @@ export function AddItemForm({ onAdd, defaultLocation = 'fridge' }) {
               onChange={e => setLocation(e.target.value)}
             >
               <option value="fridge">Fridge</option>
+              <option value="freezer">Freezer</option>
               <option value="pantry">Pantry</option>
             </select>
           </div>
