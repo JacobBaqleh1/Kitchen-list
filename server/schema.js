@@ -12,6 +12,14 @@ export const items = pgTable('items', {
   createdAt: timestamp('created_at').defaultNow(),
 });
 
+export const receipts = pgTable('receipts', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: text('user_id').notNull(),
+  boxFileId: text('box_file_id').notNull(),
+  photoType: text('photo_type').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
 export const preferences = pgTable('preferences', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: text('user_id').notNull().unique(),

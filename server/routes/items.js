@@ -77,4 +77,24 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+router.post('/bulk', async (req, res) => {
+  const { items: newItems } = req.body;
+  if (!Array.isArray(newItems) || !newItems.length) {
+    return res.status(400).json({ error: 'items array required' });
+  }
+  try {
+    const inserted = await db.insert(items)
+      .values(newItems.map(({ name, quantity = 1, location = 'fridge' }) => ({
+        userId: req.user.id,
+        name: name.trim(),
+        quantity: Number(quantity) || 1,
+        location,
+      })))
+      .returning();
+    res.status(201).json(inserted);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 export default router;

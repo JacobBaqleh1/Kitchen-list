@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '../api';
 import { ItemCard } from '../components/ItemCard';
 import { AddItemForm } from '../components/AddItemForm';
+import { PhotoScan } from '../components/PhotoScan';
 
 export default function FridgeView() {
   const [items, setItems] = useState([]);
@@ -26,6 +27,11 @@ export default function FridgeView() {
 
   const handleAdd = async (payload) => {
     await apiFetch('/api/items', { method: 'POST', body: JSON.stringify(payload) });
+    fetchItems();
+  };
+
+  const handleBulkAdd = async (newItems) => {
+    await apiFetch('/api/items/bulk', { method: 'POST', body: JSON.stringify({ items: newItems }) });
     fetchItems();
   };
 
@@ -71,6 +77,7 @@ export default function FridgeView() {
       </div>
 
       <AddItemForm onAdd={handleAdd} defaultLocation={activeTab} />
+      <PhotoScan onItemsConfirmed={handleBulkAdd} location={activeTab} />
 
       <div className="tabs">
         <button
