@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, NavLink, useNavigate, Link } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, NavLink, useNavigate, useLocation, Link } from 'react-router-dom';
 import {
   NeonAuthUIProvider, AuthView, UserButton,
   SignedIn, SignedOut, AuthCallback, RedirectToSignIn,
@@ -47,7 +47,9 @@ function ProtectedRoute({ children }) {
   );
 }
 
-function AuthPage({ path }) {
+function AuthPage() {
+  const location = useLocation();
+  const path = location.pathname.replace('/auth/', '');
   return (
     <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem 1rem' }}>
       <AuthView path={path} />
@@ -67,9 +69,7 @@ function AppWithAuth() {
     >
       <Nav />
       <Routes>
-        <Route path="/auth/sign-in" element={<AuthPage path="sign-in" />} />
-        <Route path="/auth/sign-up" element={<AuthPage path="sign-up" />} />
-        <Route path="/auth/callback" element={<AuthCallback />} />
+        <Route path="/auth/*" element={<AuthPage />} />
         <Route path="/" element={<ProtectedRoute><FridgeView /></ProtectedRoute>} />
         <Route path="/meal" element={<ProtectedRoute><MealSuggest /></ProtectedRoute>} />
         <Route path="/preferences" element={<ProtectedRoute><Preferences /></ProtectedRoute>} />
