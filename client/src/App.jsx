@@ -1,5 +1,8 @@
-import { BrowserRouter, Routes, Route, NavLink, Navigate, useNavigate } from 'react-router-dom';
-import { NeonAuthUIProvider, AuthView, UserButton, SignedIn, SignedOut, AuthCallback } from '@neondatabase/auth-ui';
+import { BrowserRouter, Routes, Route, NavLink, useNavigate, Link } from 'react-router-dom';
+import {
+  NeonAuthUIProvider, AuthView, UserButton,
+  SignedIn, SignedOut, AuthCallback, RedirectToSignIn,
+} from '@neondatabase/auth-ui';
 import '@neondatabase/auth-ui/css';
 import { auth } from './auth';
 import FridgeView from './pages/FridgeView';
@@ -11,25 +14,31 @@ function Nav() {
     <nav className="nav">
       <div className="nav-inner">
         <span className="nav-brand">KitchenList</span>
-        <div className="nav-links">
-          <SignedIn>
+        <SignedIn>
+          <div className="nav-links">
             <NavLink to="/" end>Fridge &amp; Pantry</NavLink>
             <NavLink to="/meal">Meal Ideas</NavLink>
             <NavLink to="/preferences">Preferences</NavLink>
-          </SignedIn>
-        </div>
-        <div style={{ marginLeft: 'auto' }}>
-          <SignedIn>
+          </div>
+          <div style={{ marginLeft: 'auto' }}>
             <UserButton />
-          </SignedIn>
-        </div>
+          </div>
+        </SignedIn>
       </div>
     </nav>
   );
 }
 
+function ProtectedRoute({ children }) {
+  return (
+    <>
+      <SignedIn>{children}</SignedIn>
+      <SignedOut><RedirectToSignIn /></SignedOut>
+    </>
+  );
+}
+
 function AuthPage({ path }) {
-  const navigate = useNavigate();
   return (
     <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem 1rem' }}>
       <AuthView path={path} />
@@ -37,16 +46,16 @@ function AuthPage({ path }) {
   );
 }
 
-function ProtectedRoute({ children }) {
-  const session = auth.useSession();
-  if (session.isPending) return null;
-  if (!session.data) return <Navigate to="/sign-in" replace />;
-  return children;
-}
-
-function AppRoutes() {
+function AppWithAuth() {
+  const navigate = useNavigate();
   return (
-    <>
+    <NeonAuthUIProvider
+      authClient={auth}
+      navigate={navigate}
+      replace={(path) => navigate(path, { replace: true })}
+      Link={Link}
+      redirectTo="/"
+    >
       <Nav />
       <Routes>
         <Route path="/sign-in" element={<AuthPage path="sign-in" />} />
@@ -56,16 +65,14 @@ function AppRoutes() {
         <Route path="/meal" element={<ProtectedRoute><MealSuggest /></ProtectedRoute>} />
         <Route path="/preferences" element={<ProtectedRoute><Preferences /></ProtectedRoute>} />
       </Routes>
-    </>
+    </NeonAuthUIProvider>
   );
 }
 
 export default function App() {
   return (
     <BrowserRouter>
-      <NeonAuthUIProvider authClient={auth} redirectTo="/">
-        <AppRoutes />
-      </NeonAuthUIProvider>
+      <AppWithAuth />
     </BrowserRouter>
   );
 }
