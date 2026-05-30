@@ -83,6 +83,10 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
+  position: sticky;
+  top: 4.5rem;
+  z-index: 9;
+  box-shadow: var(--shadow-md);
 }
 .meal-cta-text { color: white; }
 .meal-cta-title { font-weight: 700; font-size: 1rem; }
@@ -321,7 +325,7 @@ body {
   margin-bottom: 1rem;
   box-shadow: var(--shadow);
 }
-.pref-section-title { font-weight: 600; margin-bottom: .2rem; }
+.pref-section-title { font-weight: 600; margin-bottom: .2rem; color: var(--text); }
 .pref-section-sub { font-size: .85rem; color: var(--muted); margin-bottom: .75rem; }
 .tags-container { display: flex; flex-wrap: wrap; gap: .35rem; margin-bottom: .75rem; min-height: 28px; }
 .tag {

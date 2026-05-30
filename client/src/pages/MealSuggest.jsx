@@ -78,7 +78,7 @@ export default function MealSuggest() {
       {loading && (
         <div className="loading">
           <div className="spinner" />
-          <div>Claude is thinking...</div>
+          <div>Let me cook...</div>
         </div>
       )}
 
