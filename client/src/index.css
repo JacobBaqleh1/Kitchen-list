@@ -62,7 +62,7 @@ body {
 
 /* ===== Page ===== */
 .page { max-width: 900px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
-.page-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 1.25rem; }
+.page-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 1.25rem; color: var(--text); }
 
 /* ===== Meal CTA banner ===== */
 .meal-cta {
@@ -215,7 +215,7 @@ body {
   margin-bottom: 1.5rem;
   box-shadow: var(--shadow);
 }
-.prompt-label { display: block; font-weight: 600; margin-bottom: .3rem; }
+.prompt-label { display: block; font-weight: 600; margin-bottom: .3rem; color: var(--text); }
 .prompt-sub { font-size: .85rem; color: var(--muted); margin-bottom: .75rem; }
 .prompt-textarea {
   width: 100%;
@@ -245,7 +245,7 @@ body {
 }
 .meal-card-header { background: var(--green); color: white; padding: .85rem 1.1rem; }
 .meal-card-name { font-size: 1.1rem; font-weight: 700; }
-.meal-card-body { padding: 1.1rem; display: grid; gap: 1rem; }
+.meal-card-body { padding: 1.1rem; display: grid; gap: 1rem; color: var(--text); }
 .meal-section-title {
   font-size: .75rem;
   font-weight: 700;

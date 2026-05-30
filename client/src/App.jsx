@@ -27,7 +27,8 @@ function Nav() {
             <NavLink to="/meal">Meal Ideas</NavLink>
             <NavLink to="/preferences">Preferences</NavLink>
           </div>
-          <div style={{ marginLeft: 'auto' }}>
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '.75rem' }}>
+            <UserButton />
             <button className="btn btn-ghost btn-sm" onClick={handleSignOut}>
               Sign out
             </button>
