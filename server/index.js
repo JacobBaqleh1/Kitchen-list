@@ -8,7 +8,15 @@ import mealRouter from './routes/meal.js';
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-app.use(cors());
+const allowedOrigins = [
+  'https://mykitchenlist.vercel.app',
+  'http://localhost:5173',
+  'http://localhost:5174',
+];
+app.use(cors({
+  origin: (origin, cb) => cb(null, !origin || allowedOrigins.includes(origin)),
+  credentials: true,
+}));
 app.use(express.json());
 
 app.use('/api/items', itemsRouter);

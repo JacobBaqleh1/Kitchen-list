@@ -139,7 +139,7 @@ body {
 .item-card.editing { flex-wrap: wrap; }
 .item-checkbox { width: 17px; height: 17px; cursor: pointer; accent-color: var(--green); flex-shrink: 0; }
 .item-info { flex: 1; display: flex; align-items: center; gap: .65rem; flex-wrap: wrap; }
-.item-name { font-weight: 500; font-size: .95rem; }
+.item-name { font-weight: 500; font-size: .95rem; color: var(--text); }
 .item-qty {
   background: var(--green-light);
   color: var(--green-dark);
