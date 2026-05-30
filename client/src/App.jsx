@@ -10,6 +10,13 @@ import MealSuggest from './pages/MealSuggest';
 import Preferences from './pages/Preferences';
 
 function Nav() {
+  const navigate = useNavigate();
+
+  const handleSignOut = async () => {
+    await auth.signOut();
+    navigate('/auth/sign-in', { replace: true });
+  };
+
   return (
     <nav className="nav">
       <div className="nav-inner">
@@ -21,7 +28,9 @@ function Nav() {
             <NavLink to="/preferences">Preferences</NavLink>
           </div>
           <div style={{ marginLeft: 'auto' }}>
-            <UserButton />
+            <button className="btn btn-ghost btn-sm" onClick={handleSignOut}>
+              Sign out
+            </button>
           </div>
         </SignedIn>
       </div>
