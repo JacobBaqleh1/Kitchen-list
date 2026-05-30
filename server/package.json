@@ -17,7 +17,8 @@
     "cors": "latest",
     "dotenv": "latest",
     "drizzle-orm": "latest",
-    "express": "latest"
+    "express": "latest",
+    "jose": "^6.2.3"
   },
   "devDependencies": {
     "drizzle-kit": "latest"

@@ -3,6 +3,7 @@ import { sql } from 'drizzle-orm';
 
 export const items = pgTable('items', {
   id: uuid('id').primaryKey().defaultRandom(),
+  userId: text('user_id').notNull(),
   name: text('name').notNull(),
   quantity: integer('quantity').notNull().default(1),
   expiryDate: date('expiry_date'),
@@ -13,6 +14,7 @@ export const items = pgTable('items', {
 
 export const preferences = pgTable('preferences', {
   id: uuid('id').primaryKey().defaultRandom(),
+  userId: text('user_id').notNull().unique(),
   allergies: text('allergies').array().default(sql`'{}'::text[]`),
   dislikes: text('dislikes').array().default(sql`'{}'::text[]`),
 });

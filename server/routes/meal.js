@@ -1,8 +1,9 @@
 import { Router } from 'express';
 import AnthropicBedrock from '@anthropic-ai/bedrock-sdk';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { db } from '../db.js';
 import { items, preferences } from '../schema.js';
+import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
 const anthropic = new AnthropicBedrock({
@@ -11,16 +12,20 @@ const anthropic = new AnthropicBedrock({
   awsRegion: process.env.AWS_REGION || 'us-east-1',
 });
 
+router.use(requireAuth);
+
 router.post('/suggest', async (req, res) => {
   const { userPrompt } = req.body;
 
   try {
-    const unchecked = await db.select().from(items).where(eq(items.checked, false));
+    const unchecked = await db.select().from(items)
+      .where(and(eq(items.userId, req.user.id), eq(items.checked, false)));
     if (!unchecked.length) {
       return res.status(400).json({ error: 'No items in stock to suggest meals from' });
     }
 
-    const [prefs] = await db.select().from(preferences);
+    const [prefs] = await db.select().from(preferences)
+      .where(eq(preferences.userId, req.user.id));
     const allergies = prefs?.allergies || [];
     const dislikes = prefs?.dislikes || [];
 
