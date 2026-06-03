@@ -5,10 +5,10 @@ import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 const BoxSDK = require('box-node-sdk').default;
 import { Readable } from 'stream';
-import AnthropicBedrock from '@anthropic-ai/bedrock-sdk';
 import { db } from '../db.js';
 import { receipts } from '../schema.js';
 import { requireAuth } from '../middleware/auth.js';
+import { invokeNova, extractJson, NOVA_MODELS } from '../lib/nova.js';
 
 const router = Router();
 router.use(requireAuth);
@@ -16,12 +16,6 @@ router.use(requireAuth);
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
-});
-
-const anthropic = new AnthropicBedrock({
-  awsAccessKey: process.env.AWS_ACCESS_KEY_ID,
-  awsSecretKey: process.env.AWS_SECRET_ACCESS_KEY,
-  awsRegion: process.env.AWS_REGION || 'us-east-1',
 });
 
 function getBoxClient() {
@@ -77,30 +71,21 @@ router.post('/scan', upload.single('image'), async (req, res) => {
       ? 'Extract every grocery/food item from this receipt image. Return ONLY valid JSON, no markdown: { "items": [{ "name": "string", "quantity": 1 }] } Ignore prices, totals, store name, dates, and non-food items.'
       : 'Identify every visible food or grocery item in this photo. Estimate quantity where possible. Return ONLY valid JSON, no markdown: { "items": [{ "name": "string", "quantity": 1 }] } Only include food items — ignore packaging, surfaces, and non-food objects.';
 
-    const response = await anthropic.messages.create({
-      model: 'us.anthropic.claude-opus-4-5-20251101-v1:0',
-      max_tokens: 1024,
+    const raw = await invokeNova({
+      model: NOVA_MODELS.lite,
+      maxTokens: 1024,
       system: systemPrompt,
-      messages: [{
-        role: 'user',
-        content: [
-          {
-            type: 'image',
-            source: { type: 'base64', media_type: 'image/jpeg', data: compressed.toString('base64') },
-          },
-          { type: 'text', text: 'Analyze this image.' },
-        ],
-      }],
+      user: 'Analyze this image.',
+      images: [{ format: 'jpeg', data: compressed.toString('base64') }],
     });
 
     // 5. Parse and return detected items (no DB insert yet — client confirms first)
-    const raw = response.content[0].text.replace(/^```(?:json)?\n?/i, '').replace(/\n?```$/i, '').trim();
-    try {
-      const parsed = JSON.parse(raw);
-      res.json({ items: parsed.items });
-    } catch {
-      res.status(500).json({ error: 'Could not read photo, please try again' });
+    const parsed = extractJson(raw);
+    if (!parsed || !Array.isArray(parsed.items)) {
+      console.error('Nova raw response:', String(raw).slice(0, 500));
+      return res.status(500).json({ error: 'Could not read photo, please try again' });
     }
+    res.json({ items: parsed.items });
   } catch (e) {
     console.error('Photo scan error:', e.message);
     res.status(500).json({ error: e.message || 'Could not read photo, please try again' });

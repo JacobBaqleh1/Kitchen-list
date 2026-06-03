@@ -20,6 +20,20 @@ export const receipts = pgTable('receipts', {
   createdAt: timestamp('created_at').defaultNow(),
 });
 
+// Scraped recipe cache (seeded out-of-band via Apify). The live meal route
+// only reads from this table — see lib/recipeContext.js. Full-text search is
+// provided by a functional GIN index created in scripts/setup-search.js.
+export const recipes = pgTable('recipes', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  title: text('title').notNull(),
+  sourceUrl: text('source_url').unique(),
+  cuisine: text('cuisine'),
+  ingredients: text('ingredients').array().default(sql`'{}'::text[]`),
+  instructions: text('instructions'),
+  rawText: text('raw_text').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+
 export const preferences = pgTable('preferences', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: text('user_id').notNull().unique(),

@@ -1,18 +1,21 @@
 import { Router } from 'express';
-import AnthropicBedrock from '@anthropic-ai/bedrock-sdk';
 import { eq, and } from 'drizzle-orm';
 import { db } from '../db.js';
 import { items, preferences } from '../schema.js';
 import { requireAuth } from '../middleware/auth.js';
+import { invokeNova, extractJson, DEFAULT_MEAL_MODEL } from '../lib/nova.js';
+import { retrieveRecipeContext } from '../lib/recipeContext.js';
 
 const router = Router();
-const anthropic = new AnthropicBedrock({
-  awsAccessKey: process.env.AWS_ACCESS_KEY_ID,
-  awsSecretKey: process.env.AWS_SECRET_ACCESS_KEY,
-  awsRegion: process.env.AWS_REGION || 'us-east-1',
-});
-
 router.use(requireAuth);
+
+const SYSTEM_PROMPT =
+  'You are a helpful meal planning assistant. Given the user\'s available ingredients, ' +
+  'their preferences, and a set of reference recipes retrieved from our database, suggest 3 meals. ' +
+  'Use the reference recipes as inspiration and grounding when they are relevant, but adapt them to ' +
+  'the user\'s actual ingredients and constraints. For each meal return a name, a full step-by-step ' +
+  'recipe, and a shopping list of extra ingredients needed. ' +
+  'Respond ONLY with valid JSON matching the requested shape. No markdown, no explanation.';
 
 router.post('/suggest', async (req, res) => {
   const { userPrompt } = req.body;
@@ -32,14 +35,26 @@ router.post('/suggest', async (req, res) => {
     const fridgeItems = unchecked.filter(i => i.location === 'fridge');
     const freezerItems = unchecked.filter(i => i.location === 'freezer');
     const pantryItems = unchecked.filter(i => i.location === 'pantry');
-
     const fmt = arr => arr.length ? arr.map(i => `${i.quantity}x ${i.name}`).join(', ') : 'none';
 
-    const userMessage = `Fridge contains: ${fmt(fridgeItems)}
+    // 1. Retrieve relevant cached recipe context from Neon (cheap, read-only).
+    const ingredientNames = unchecked.map(i => i.name);
+    const { rows: contextRows, contextString } = await retrieveRecipeContext({
+      ingredients: ingredientNames,
+      userPrompt,
+      limit: 5,
+    });
+
+    // 2. Compile the prompt, injecting the Neon context as a reference harness.
+    const referenceBlock = contextString
+      ? `Reference recipes from our database (use as grounding/inspiration where relevant):\n\n${contextString}\n\n---\n\n`
+      : '';
+
+    const userMessage = `${referenceBlock}Fridge contains: ${fmt(fridgeItems)}
 Freezer contains: ${fmt(freezerItems)}
 Pantry contains: ${fmt(pantryItems)}
-Allergies: ${allergies.length ? allergies.join(', ') : 'none'}
-Dislikes: ${dislikes.length ? dislikes.join(', ') : 'none'}${userPrompt ? `\nExtra request: ${userPrompt}` : ''}
+Allergies (never include): ${allergies.length ? allergies.join(', ') : 'none'}
+Dislikes (avoid): ${dislikes.length ? dislikes.join(', ') : 'none'}${userPrompt ? `\nExtra request: ${userPrompt}` : ''}
 
 Return JSON in this exact shape:
 {
@@ -52,25 +67,24 @@ Return JSON in this exact shape:
   ]
 }`;
 
-    const response = await anthropic.messages.create({
-      model: 'us.anthropic.claude-opus-4-5-20251101-v1:0',
-      max_tokens: 2048,
-      system:
-        'You are a helpful meal planning assistant. Given a list of fridge and pantry items and user preferences, suggest 3 meals. For each meal return a name, a full step-by-step recipe, and a shopping list of extra ingredients needed. Respond ONLY in valid JSON. No markdown, no explanation.',
-      messages: [{ role: 'user', content: userMessage }],
+    // 3. Invoke Amazon Nova via the native Bedrock runtime.
+    const raw = await invokeNova({
+      system: SYSTEM_PROMPT,
+      user: userMessage,
+      model: DEFAULT_MEAL_MODEL,
+      maxTokens: 2048,
     });
 
-    const raw = response.content[0].text;
-    // Strip markdown fences if model wraps output despite instructions
-    const text = raw.replace(/^```(?:json)?\n?/i, '').replace(/\n?```$/i, '').trim();
-    try {
-      const parsed = JSON.parse(text);
-      res.json(parsed);
-    } catch {
-      console.error('AI raw response:', raw.slice(0, 500));
-      res.status(500).json({ error: 'AI returned invalid response, try again' });
+    // 4. Parse and return clean JSON.
+    const parsed = extractJson(raw);
+    if (!parsed || !Array.isArray(parsed.meals)) {
+      console.error('Nova raw response:', String(raw).slice(0, 500));
+      return res.status(500).json({ error: 'AI returned invalid response, try again' });
     }
+
+    res.json({ ...parsed, _contextUsed: contextRows.length });
   } catch (e) {
+    console.error('Meal suggest error:', e.message);
     res.status(500).json({ error: e.message });
   }
 });
