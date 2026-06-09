@@ -53,7 +53,10 @@ export default function FridgeView() {
   };
 
   const tabItems = items.filter(i => i.location === activeTab);
-  const inStock = tabItems.filter(i => !i.checked);
+  // In stock shows most recently entered first (API returns oldest-first).
+  const inStock = tabItems
+    .filter(i => !i.checked)
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   const used = tabItems.filter(i => i.checked);
   const uncheckedCount = items.filter(i => !i.checked).length;
   const hasUnchecked = uncheckedCount > 0;
