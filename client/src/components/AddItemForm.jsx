@@ -24,46 +24,43 @@ export function AddItemForm({ onAdd, defaultLocation = 'fridge' }) {
   };
 
   return (
-    <div className="add-form">
-      <div className="add-form-title">Add item</div>
+    <div className="mb-5 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+      <div className="mb-3 text-sm font-semibold text-gray-900">Add item</div>
       <form onSubmit={submit}>
-        <div className="form-row">
-          <div className="form-group" style={{ flex: 1, minWidth: 140 }}>
-            <label>Name *</label>
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="flex w-full min-w-35 flex-1 flex-col gap-1">
+            <label className="text-xs font-medium text-gray-500">Name *</label>
             <input
-              className="input"
+              className="input w-full"
               placeholder="e.g. Milk"
               value={name}
               onChange={e => setName(e.target.value)}
               required
             />
           </div>
-          <div className="form-group">
-            <label>Qty</label>
+          <div className="flex w-full flex-col gap-1 sm:w-auto">
+            <label className="text-xs font-medium text-gray-500">Qty</label>
             <input
               type="number"
-              className="input"
-              style={{ width: 70 }}
+              className="input w-full sm:w-17.5"
               value={quantity}
               onChange={e => setQuantity(e.target.value)}
               min="1"
             />
           </div>
-          <div className="form-group">
-            <label>Expiry (optional)</label>
+          <div className="flex w-full flex-col gap-1 sm:w-auto">
+            <label className="text-xs font-medium text-gray-500">Expiry (optional)</label>
             <input
               type="date"
-              className="input"
-              style={{ width: 148 }}
+              className="input w-full sm:w-37"
               value={expiryDate}
               onChange={e => setExpiryDate(e.target.value)}
             />
           </div>
-          <div className="form-group">
-            <label>Location</label>
+          <div className="flex w-full flex-col gap-1 sm:w-auto">
+            <label className="text-xs font-medium text-gray-500">Location</label>
             <select
-              className="input"
-              style={{ width: 105 }}
+              className="input w-full sm:w-26.25"
               value={location}
               onChange={e => setLocation(e.target.value)}
             >
@@ -72,8 +69,8 @@ export function AddItemForm({ onAdd, defaultLocation = 'fridge' }) {
               <option value="pantry">Pantry</option>
             </select>
           </div>
-          <div className="form-group" style={{ justifyContent: 'flex-end' }}>
-            <button type="submit" className="btn btn-primary" disabled={loading || !name.trim()}>
+          <div className="flex w-full flex-col justify-end sm:w-auto">
+            <button type="submit" className="btn btn-primary w-full sm:w-auto" disabled={loading || !name.trim()}>
               {loading ? 'Adding...' : 'Add'}
             </button>
           </div>

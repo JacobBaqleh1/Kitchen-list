@@ -6,8 +6,7 @@ const LOCATIONS = ['fridge', 'freezer', 'pantry'];
 function LocationSelect({ value, onChange }) {
   return (
     <select
-      className="input"
-      style={{ width: 82, padding: '.25rem .4rem', fontSize: '.78rem' }}
+      className="input w-20 px-2 py-1 text-xs"
       value={value}
       onChange={e => onChange(e.target.value)}
     >
@@ -29,10 +28,9 @@ function DetectedItem({ item, index, onChange, onDelete }) {
 
   if (editing) {
     return (
-      <li className="photo-item-row">
+      <li className="flex flex-wrap items-center gap-1.5">
         <input
-          className="input"
-          style={{ flex: 1, minWidth: 0 }}
+          className="input min-w-0 flex-1"
           value={name}
           onChange={e => setName(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && save()}
@@ -40,8 +38,7 @@ function DetectedItem({ item, index, onChange, onDelete }) {
         />
         <input
           type="number"
-          className="input"
-          style={{ width: 56 }}
+          className="input w-14"
           value={qty}
           onChange={e => setQty(e.target.value)}
           min="1"
@@ -53,9 +50,11 @@ function DetectedItem({ item, index, onChange, onDelete }) {
   }
 
   return (
-    <li className="photo-item-row">
-      <span className="item-qty">&times;{item.quantity}</span>
-      <span style={{ flex: 1 }}>{item.name}</span>
+    <li className="flex flex-wrap items-center gap-1.5 text-sm">
+      <span className="rounded-full bg-green-100 px-1.5 py-0.5 text-xs font-semibold text-green-700">
+        &times;{item.quantity}
+      </span>
+      <span className="flex-1">{item.name}</span>
       <LocationSelect value={item.location} onChange={loc => onChange(index, { ...item, location: loc })} />
       <button className="btn btn-ghost btn-sm" onClick={() => setEditing(true)}>Edit</button>
       <button className="btn btn-danger btn-sm" onClick={() => onDelete(index)}>✕</button>
@@ -79,17 +78,16 @@ function AddItemRow({ onAdd, defaultLocation }) {
 
   if (!open) {
     return (
-      <li style={{ paddingTop: '.25rem' }}>
+      <li className="pt-1">
         <button className="btn btn-ghost btn-sm" onClick={() => setOpen(true)}>+ Add item</button>
       </li>
     );
   }
 
   return (
-    <li className="photo-item-row">
+    <li className="flex flex-wrap items-center gap-1.5">
       <input
-        className="input"
-        style={{ flex: 1, minWidth: 0 }}
+        className="input min-w-0 flex-1"
         placeholder="Item name"
         value={name}
         onChange={e => setName(e.target.value)}
@@ -98,8 +96,7 @@ function AddItemRow({ onAdd, defaultLocation }) {
       />
       <input
         type="number"
-        className="input"
-        style={{ width: 56 }}
+        className="input w-14"
         value={qty}
         onChange={e => setQty(e.target.value)}
         min="1"
@@ -168,21 +165,29 @@ export function PhotoScan({ onItemsConfirmed, location }) {
   };
 
   return (
-    <div className="photo-scan add-form">
-      <div className="add-form-title">Scan photo</div>
-      <div className="scan-options">
-        <button className="photo-scan-option" onClick={() => foodRef.current.click()} disabled={scanning}>
-          <span className="photo-scan-icon">🥦</span>
+    <div className="mb-5 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+      <div className="mb-3 text-sm font-semibold text-gray-900">Scan photo</div>
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <button
+          className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 text-left transition-colors cursor-pointer enabled:hover:border-green-600 enabled:hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+          onClick={() => foodRef.current.click()}
+          disabled={scanning}
+        >
+          <span className="shrink-0 text-2xl">🥦</span>
           <span>
-            <strong>Scan food items</strong>
-            <small>Photo of groceries or produce</small>
+            <strong className="block text-sm font-semibold text-gray-900">Scan food items</strong>
+            <small className="mt-0.5 block text-xs text-gray-500">Photo of groceries or produce</small>
           </span>
         </button>
-        <button className="photo-scan-option" onClick={() => receiptRef.current.click()} disabled={scanning}>
-          <span className="photo-scan-icon">🧾</span>
+        <button
+          className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 text-left transition-colors cursor-pointer enabled:hover:border-green-600 enabled:hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+          onClick={() => receiptRef.current.click()}
+          disabled={scanning}
+        >
+          <span className="shrink-0 text-2xl">🧾</span>
           <span>
-            <strong>Scan receipt</strong>
-            <small>Extract items from a receipt</small>
+            <strong className="block text-sm font-semibold text-gray-900">Scan receipt</strong>
+            <small className="mt-0.5 block text-xs text-gray-500">Extract items from a receipt</small>
           </span>
         </button>
       </div>
@@ -191,21 +196,23 @@ export function PhotoScan({ onItemsConfirmed, location }) {
       <input ref={receiptRef} type="file" accept="image/*" capture="environment" hidden onChange={e => handleFile(e, 'receipt')} />
 
       {scanning && (
-        <div className="photo-scan-loading">
-          <div className="spinner" style={{ width: '1.2rem', height: '1.2rem', marginBottom: 0 }} />
+        <div className="mt-2 inline-flex items-center gap-2 text-sm text-gray-500">
+          <span className="spinner size-5" />
           <span>Reading your photo...</span>
         </div>
       )}
 
-      {error && <div className="alert alert-error" style={{ marginTop: '.75rem' }}>{error}</div>}
+      {error && (
+        <div className="mt-3 rounded-xl border border-red-300 bg-red-100 px-4 py-3 text-sm text-red-800">{error}</div>
+      )}
 
       {detected && (
-        <div className="photo-confirm">
-          <div className="photo-confirm-header">
+        <div className="mt-3 rounded-xl border border-green-200 bg-green-100 p-4 text-gray-900">
+          <div className="mb-2.5 text-sm">
             <strong>We found {detected.length} item{detected.length !== 1 ? 's' : ''}</strong>
             <span> — review and add to {location}:</span>
           </div>
-          <ul className="photo-confirm-list">
+          <ul className="mb-3 flex max-h-40 list-none flex-col gap-1.5 overflow-y-auto">
             {detected.map((item, i) => (
               <DetectedItem
                 key={i}
@@ -217,7 +224,7 @@ export function PhotoScan({ onItemsConfirmed, location }) {
             ))}
             <AddItemRow onAdd={handleAddItem} />
           </ul>
-          <div className="photo-confirm-actions">
+          <div className="flex flex-wrap gap-2">
             <button className="btn btn-primary btn-sm" onClick={confirmAdd} disabled={adding || !detected.length}>
               {adding ? 'Adding...' : `Add all ${detected.length} item${detected.length !== 1 ? 's' : ''}`}
             </button>

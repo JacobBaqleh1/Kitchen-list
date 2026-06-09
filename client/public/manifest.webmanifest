@@ -1,0 +1,13 @@
+{
+  "name": "KitchenList",
+  "short_name": "KitchenList",
+  "description": "Track your fridge, freezer, and pantry — and get AI meal ideas.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f9fafb",
+  "theme_color": "#16a34a",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

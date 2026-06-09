@@ -35,55 +35,49 @@ export default function MealSuggest() {
   };
 
   return (
-    <div className="page">
-      <button
-        className="btn btn-ghost btn-sm"
-        style={{ marginBottom: '1rem' }}
-        onClick={() => navigate('/')}
-      >
+    <div className="mx-auto max-w-225 px-3 pb-8 pt-4 sm:px-4 sm:pb-12 sm:pt-6">
+      <button className="btn btn-ghost btn-sm mb-4" onClick={() => navigate('/')}>
         &larr; Back to fridge
       </button>
 
-      <h1 className="page-title">AI Meal Ideas</h1>
+      <h1 className="mb-5 text-2xl font-bold text-gray-900">AI Meal Ideas</h1>
 
-      <div className="prompt-area">
-        <label className="prompt-label">Custom request (optional)</label>
-        <p className="prompt-sub">
+      <div className="mb-6 rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <label className="mb-1 block font-semibold text-gray-900">Custom request (optional)</label>
+        <p className="mb-3 text-sm text-gray-500">
           Claude will suggest 3 meals based on your {itemCount} item{itemCount !== 1 ? 's' : ''} in stock.
           Add any extra preferences here.
         </p>
         <textarea
-          className="prompt-textarea"
+          className="min-h-20 w-full resize-y rounded-lg border border-gray-200 px-3 py-2.5 text-sm text-gray-900 outline-none transition-colors focus:border-green-600"
           placeholder={`e.g. "Something quick and easy" or "High protein, vegetarian"`}
           value={prompt}
           onChange={e => setPrompt(e.target.value)}
           disabled={loading}
         />
-        <div className="prompt-footer">
-          <button
-            className="btn btn-primary"
-            onClick={suggest}
-            disabled={loading || itemCount === 0}
-          >
+        <div className="mt-3 flex flex-wrap items-center gap-4">
+          <button className="btn btn-primary" onClick={suggest} disabled={loading || itemCount === 0}>
             {loading ? 'Generating...' : 'Suggest Meals'}
           </button>
           {itemCount === 0 && (
-            <span className="hint">Add items to your fridge or pantry first</span>
+            <span className="text-sm text-gray-500">Add items to your fridge or pantry first</span>
           )}
         </div>
       </div>
 
-      {error && <div className="alert alert-error">{error}</div>}
+      {error && (
+        <div className="mb-4 rounded-xl border border-red-300 bg-red-100 px-4 py-3 text-sm text-red-800">{error}</div>
+      )}
 
       {loading && (
-        <div className="loading">
-          <div className="spinner" />
+        <div className="p-12 text-center text-gray-500">
+          <div className="spinner mb-3 size-8" />
           <div>Let me cook...</div>
         </div>
       )}
 
       {meals && (
-        <div className="meals-grid">
+        <div className="grid gap-4">
           {meals.map((meal, i) => (
             <MealCard key={i} meal={meal} />
           ))}

@@ -35,60 +35,64 @@ export function ItemCard({ item, onToggle, onEdit, onDelete }) {
   };
 
   const status = expiryStatus();
+  const expirySoon = status === 'soon' || status === 'expired';
 
   if (editing) {
     return (
-      <div className="item-card editing">
-        <div className="edit-row">
-          <input
-            className="input"
-            style={{ flex: 1, minWidth: 120 }}
-            value={editName}
-            onChange={e => setEditName(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && saveEdit()}
-            autoFocus
-          />
-          <input
-            type="number"
-            className="input"
-            style={{ width: 70 }}
-            value={editQty}
-            onChange={e => setEditQty(e.target.value)}
-            min="1"
-          />
-          <input
-            type="date"
-            className="input"
-            style={{ width: 145 }}
-            value={editExpiry}
-            onChange={e => setEditExpiry(e.target.value)}
-          />
-          <button className="btn btn-primary btn-sm" onClick={saveEdit}>Save</button>
-          <button className="btn btn-secondary btn-sm" onClick={cancelEdit}>Cancel</button>
-        </div>
+      <div className="flex w-full flex-wrap items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2.5 shadow-sm">
+        <input
+          className="input min-w-30 flex-1"
+          value={editName}
+          onChange={e => setEditName(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && saveEdit()}
+          autoFocus
+        />
+        <input
+          type="number"
+          className="input w-16"
+          value={editQty}
+          onChange={e => setEditQty(e.target.value)}
+          min="1"
+        />
+        <input
+          type="date"
+          className="input w-full min-w-32.5 flex-1 sm:w-36 sm:flex-initial"
+          value={editExpiry}
+          onChange={e => setEditExpiry(e.target.value)}
+        />
+        <button className="btn btn-primary btn-sm" onClick={saveEdit}>Save</button>
+        <button className="btn btn-secondary btn-sm" onClick={cancelEdit}>Cancel</button>
       </div>
     );
   }
 
   return (
-    <div className={`item-card ${item.checked ? 'checked' : ''}`}>
+    <div
+      className={`flex min-w-0 items-center gap-2.5 rounded-xl border border-gray-200 bg-white px-3 py-2.5 shadow-sm transition-opacity ${item.checked ? 'opacity-60' : ''}`}
+    >
       <input
         type="checkbox"
-        className="item-checkbox"
+        className="size-4.25 shrink-0 cursor-pointer accent-green-600"
         checked={item.checked}
         onChange={() => onToggle(item.id)}
       />
-      <div className="item-info">
-        <span className="item-name">{item.name}</span>
-        <span className="item-qty">&times;{item.quantity}</span>
+      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2.5">
+        <span
+          className={`truncate text-sm font-medium ${item.checked ? 'text-gray-500 line-through' : 'text-gray-900'}`}
+        >
+          {item.name}
+        </span>
+        <span className="rounded-full bg-green-100 px-1.5 py-0.5 text-xs font-semibold text-green-700">
+          &times;{item.quantity}
+        </span>
         {item.expiryDate && (
-          <span className={`item-expiry ${status === 'soon' || status === 'expired' ? 'soon' : ''}`}>
+          <span className={`text-xs ${expirySoon ? 'font-semibold text-amber-600' : 'text-gray-500'}`}>
             {status === 'expired' ? 'Expired: ' : 'Exp: '}
             {new Date(item.expiryDate + 'T00:00:00').toLocaleDateString()}
           </span>
         )}
       </div>
-      <div className="item-actions">
+      <div className="flex shrink-0 gap-1">
         <button className="btn btn-ghost btn-sm" onClick={() => setEditing(true)}>Edit</button>
         <button className="btn btn-danger btn-sm" onClick={() => onDelete(item.id)}>Delete</button>
       </div>

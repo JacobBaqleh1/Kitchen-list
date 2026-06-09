@@ -3,24 +3,36 @@ import {
   NeonAuthUIProvider, AuthView, UserButton,
   SignedIn, SignedOut, AuthCallback, RedirectToSignIn,
 } from '@neondatabase/auth-ui';
-import '@neondatabase/auth-ui/css';
 import { auth } from './auth';
 import FridgeView from './pages/FridgeView';
 import MealSuggest from './pages/MealSuggest';
 import Preferences from './pages/Preferences';
+import { DebugPanel } from './components/DebugPanel';
+
+const navLinkBase =
+  'flex-1 sm:flex-initial text-center sm:text-left rounded-md px-2 sm:px-3 py-1.5 text-sm font-medium no-underline cursor-pointer select-none transition-colors';
+const navLinkClass = ({ isActive }) =>
+  isActive
+    ? `${navLinkBase} bg-green-100 text-green-600`
+    : `${navLinkBase} text-gray-500 hover:bg-green-100 hover:text-green-700`;
 
 function Nav() {
   return (
-    <nav className="nav">
-      <div className="nav-inner">
-        <Link to="/" className="nav-brand">KitchenList</Link>
+    <nav className="sticky top-0 z-10 border-b border-gray-200 bg-white shadow-sm">
+      <div className="mx-auto flex max-w-225 flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3 sm:gap-8">
+        <Link
+          to="/"
+          className="select-none text-xl font-bold tracking-tight text-green-600 no-underline"
+        >
+          KitchenList
+        </Link>
         <SignedIn>
-          <div className="nav-links">
-            <NavLink to="/" end>Fridge &amp; Pantry</NavLink>
-            <NavLink to="/meal">Meal Ideas</NavLink>
-            <NavLink to="/preferences">Preferences</NavLink>
+          <div className="order-3 flex w-full justify-between gap-1 sm:order-0 sm:w-auto sm:justify-start">
+            <NavLink to="/" end className={navLinkClass}>Fridge &amp; Pantry</NavLink>
+            <NavLink to="/meal" className={navLinkClass}>Meal Ideas</NavLink>
+            <NavLink to="/preferences" className={navLinkClass}>Preferences</NavLink>
           </div>
-          <div style={{ marginLeft: 'auto' }}>
+          <div className="ml-auto">
             <UserButton />
           </div>
         </SignedIn>
@@ -42,7 +54,7 @@ function AuthPage() {
   const location = useLocation();
   const path = location.pathname.replace('/auth/', '');
   return (
-    <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem 1rem' }}>
+    <div className="flex justify-center px-4 py-12">
       <AuthView path={path} />
     </div>
   );
@@ -64,6 +76,8 @@ function AppWithAuth() {
     >
       <Nav />
       <Routes>
+        {/* OAuth/social redirects land here and complete in-context (PWA-safe). */}
+        <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/auth/*" element={<AuthPage />} />
         <Route path="/" element={<ProtectedRoute><FridgeView /></ProtectedRoute>} />
         <Route path="/meal" element={<ProtectedRoute><MealSuggest /></ProtectedRoute>} />
@@ -77,6 +91,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <AppWithAuth />
+      <DebugPanel />
     </BrowserRouter>
   );
 }

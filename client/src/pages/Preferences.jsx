@@ -48,34 +48,44 @@ export default function Preferences() {
 
   if (loading) {
     return (
-      <div className="page">
-        <div className="loading"><div className="spinner" /><div>Loading...</div></div>
+      <div className="mx-auto max-w-225 px-3 pb-8 pt-4 sm:px-4 sm:pb-12 sm:pt-6">
+        <div className="p-12 text-center text-gray-500">
+          <div className="spinner mb-3 size-8" />
+          <div>Loading...</div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="page">
-      <h1 className="page-title">Preferences</h1>
-      <p style={{ color: 'var(--muted)', marginBottom: '1.5rem', fontSize: '.9rem' }}>
+    <div className="mx-auto max-w-225 px-3 pb-8 pt-4 sm:px-4 sm:pb-12 sm:pt-6">
+      <h1 className="mb-5 text-2xl font-bold text-gray-900">Preferences</h1>
+      <p className="mb-6 text-sm text-gray-500">
         These preferences are sent to Claude when generating meal suggestions.
       </p>
 
-      <div className="pref-section">
-        <div className="pref-section-title">Allergies</div>
-        <div className="pref-section-sub">Ingredients Claude will never include</div>
-        <div className="tags-container">
+      <div className="mb-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="mb-0.5 font-semibold text-gray-900">Allergies</div>
+        <div className="mb-3 text-sm text-gray-500">Ingredients Claude will never include</div>
+        <div className="mb-3 flex min-h-7 flex-wrap gap-1.5">
           {allergies.map(a => (
-            <span key={a} className="tag">
+            <span
+              key={a}
+              className="inline-flex items-center gap-1.5 rounded-full border border-green-200 bg-green-100 px-2 py-0.5 text-sm font-medium text-green-700"
+            >
               {a}
-              <button className="tag-remove" onClick={() => removeTag(a, setAllergies)}>&times;</button>
+              <button
+                className="flex cursor-pointer items-center border-0 bg-transparent p-0 text-lg leading-none text-inherit opacity-65 hover:opacity-100"
+                onClick={() => removeTag(a, setAllergies)}
+              >
+                &times;
+              </button>
             </span>
           ))}
         </div>
-        <div className="tag-input-row">
+        <div className="flex gap-2">
           <input
-            className="input"
-            style={{ flex: 1 }}
+            className="input flex-1"
             placeholder="Type an allergy and press Enter"
             value={newAllergy}
             onChange={e => setNewAllergy(e.target.value)}
@@ -87,21 +97,28 @@ export default function Preferences() {
         </div>
       </div>
 
-      <div className="pref-section">
-        <div className="pref-section-title">Dislikes</div>
-        <div className="pref-section-sub">Ingredients Claude will minimize or avoid</div>
-        <div className="tags-container">
+      <div className="mb-4 rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <div className="mb-0.5 font-semibold text-gray-900">Dislikes</div>
+        <div className="mb-3 text-sm text-gray-500">Ingredients Claude will minimize or avoid</div>
+        <div className="mb-3 flex min-h-7 flex-wrap gap-1.5">
           {dislikes.map(d => (
-            <span key={d} className="tag tag-amber">
+            <span
+              key={d}
+              className="inline-flex items-center gap-1.5 rounded-full border border-amber-200 bg-amber-100 px-2 py-0.5 text-sm font-medium text-amber-600"
+            >
               {d}
-              <button className="tag-remove" onClick={() => removeTag(d, setDislikes)}>&times;</button>
+              <button
+                className="flex cursor-pointer items-center border-0 bg-transparent p-0 text-lg leading-none text-inherit opacity-65 hover:opacity-100"
+                onClick={() => removeTag(d, setDislikes)}
+              >
+                &times;
+              </button>
             </span>
           ))}
         </div>
-        <div className="tag-input-row">
+        <div className="flex gap-2">
           <input
-            className="input"
-            style={{ flex: 1 }}
+            className="input flex-1"
             placeholder="Type a dislike and press Enter"
             value={newDislike}
             onChange={e => setNewDislike(e.target.value)}
@@ -113,8 +130,12 @@ export default function Preferences() {
         </div>
       </div>
 
-      <div className="pref-actions">
-        {saved && <div className="alert alert-success" style={{ margin: 0 }}>Preferences saved!</div>}
+      <div className="mt-5 flex flex-wrap items-center gap-4">
+        {saved && (
+          <div className="rounded-xl border border-green-200 bg-green-100 px-4 py-3 text-sm text-green-700">
+            Preferences saved!
+          </div>
+        )}
         <button className="btn btn-primary" onClick={save} disabled={saving}>
           {saving ? 'Saving...' : 'Save preferences'}
         </button>
