@@ -8,10 +8,13 @@ import { Readable } from 'stream';
 import { db } from '../db.js';
 import { receipts } from '../schema.js';
 import { requireAuth } from '../middleware/auth.js';
+import { llmRateLimit } from '../middleware/rateLimit.js';
 import { invokeNova, extractJson, NOVA_MODELS } from '../lib/nova.js';
 
 const router = Router();
 router.use(requireAuth);
+// Cap photo scans per user (each one is an LLM vision call).
+router.use(llmRateLimit({ windowMs: 10 * 60 * 1000, max: 30 }));
 
 const upload = multer({
   storage: multer.memoryStorage(),

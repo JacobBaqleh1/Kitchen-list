@@ -11,6 +11,10 @@ import photosRouter from './routes/photos.js';
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Render serves behind a reverse proxy; trust the first hop so req.ip reflects
+// the real client (used by the rate limiter's IP fallback).
+app.set('trust proxy', 1);
+
 const allowedOrigins = [
   'https://mykitchenlist.vercel.app',
   'http://localhost:5173',

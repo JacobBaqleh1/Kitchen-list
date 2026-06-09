@@ -3,11 +3,14 @@ import { eq, and } from 'drizzle-orm';
 import { db } from '../db.js';
 import { items, preferences } from '../schema.js';
 import { requireAuth } from '../middleware/auth.js';
+import { llmRateLimit } from '../middleware/rateLimit.js';
 import { invokeNova, extractJson, DEFAULT_MEAL_MODEL } from '../lib/nova.js';
 import { retrieveRecipeContext } from '../lib/recipeContext.js';
 
 const router = Router();
 router.use(requireAuth);
+// Cap LLM meal generations per user (≈ generous for real use, blocks abuse loops).
+router.use(llmRateLimit({ windowMs: 10 * 60 * 1000, max: 20 }));
 
 const SYSTEM_PROMPT =
   'You are a helpful meal planning assistant. Given the user\'s available ingredients, ' +
