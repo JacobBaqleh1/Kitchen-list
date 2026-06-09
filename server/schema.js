@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, integer, boolean, date, timestamp } from 'drizzle-orm/pg-core';
+import { pgTable, uuid, text, integer, boolean, date, timestamp, index } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
 export const items = pgTable('items', {
@@ -10,7 +10,10 @@ export const items = pgTable('items', {
   checked: boolean('checked').notNull().default(false),
   location: text('location').notNull().default('fridge'),
   createdAt: timestamp('created_at').defaultNow(),
-});
+}, (t) => [
+  // Matches GET /api/items: filter by user_id, order by created_at.
+  index('items_user_created_idx').on(t.userId, t.createdAt),
+]);
 
 export const receipts = pgTable('receipts', {
   id: uuid('id').primaryKey().defaultRandom(),

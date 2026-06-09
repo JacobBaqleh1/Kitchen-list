@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, NavLink, useNavigate, useLocation, Link } from 'react-router-dom';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
@@ -6,6 +7,7 @@ import {
   SignedIn, SignedOut, AuthCallback, RedirectToSignIn,
 } from '@neondatabase/auth-ui';
 import { auth } from './auth';
+import { setAuthToken } from './api';
 import FridgeView from './pages/FridgeView';
 import MealSuggest from './pages/MealSuggest';
 import Preferences from './pages/Preferences';
@@ -42,6 +44,16 @@ function Nav() {
   );
 }
 
+// Keeps api.js's cached token in sync with the live session, so requests skip
+// the per-call auth.getSession() round trip. Handles refresh, logout, and
+// user-switch automatically since it tracks the reactive session.
+function SessionTokenSync() {
+  const { data } = auth.useSession();
+  const token = data?.session?.token ?? null;
+  useEffect(() => { setAuthToken(token); }, [token]);
+  return null;
+}
+
 function ProtectedRoute({ children }) {
   return (
     <>
@@ -76,6 +88,7 @@ function AppWithAuth() {
       redirectTo="/"
       social={{ providers: ["google", "github"] }}
     >
+      <SessionTokenSync />
       <Nav />
       <Routes>
         <Route path="/auth/*" element={<AuthPage />} />

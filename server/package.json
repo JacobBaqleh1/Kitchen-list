@@ -10,6 +10,7 @@
     "dev": "node --watch index.js",
     "db:push": "drizzle-kit push",
     "db:setup-search": "node scripts/setup-search.js",
+    "db:setup-indexes": "node scripts/setup-indexes.js",
     "seed:recipes": "node scripts/seed-recipes.js"
   },
   "dependencies": {
