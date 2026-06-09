@@ -14,7 +14,7 @@ export function AddItemForm({ onAdd, defaultLocation = 'fridge' }) {
     if (!name.trim()) return;
     setLoading(true);
     try {
-      await onAdd({ name: name.trim(), quantity: Number(quantity), expiryDate: expiryDate || null, location });
+      await onAdd({ name: name.trim(), quantity: Math.max(1, Number(quantity) || 1), expiryDate: expiryDate || null, location });
       setName('');
       setQuantity(1);
       setExpiryDate('');
