@@ -4,6 +4,18 @@ import { dlog } from './debug';
 
 const short = (url = '') => String(url).replace(/^https?:\/\/[^/]+/, '').replace(/\?.*$/, '');
 
+// Safe structural dump: key names + string lengths + JWT-ness only (no values).
+function shape(d) {
+  if (d === null) return 'null';
+  if (!d || typeof d !== 'object') return typeof d;
+  return Object.keys(d).map(k => {
+    const v = d[k];
+    if (typeof v === 'string') return `${k}:str${v.length}${v.split('.').length === 3 ? '/JWT' : ''}`;
+    if (v && typeof v === 'object') return `${k}:{${Object.keys(v).join(',')}}`;
+    return `${k}:${typeof v}`;
+  }).join(' ');
+}
+
 /**
  * Standalone PWA auth.
  *
@@ -52,6 +64,10 @@ export const auth = createAuthClient(import.meta.env.VITE_NEON_AUTH_URL, {
         if (tok) setToken(tok);
         const src = header ? 'header' : (body ? 'body' : 'none');
         dlog(`✓ ${short(url)} ${ctx?.response?.status ?? ''} tokenFrom:${src}${tok ? '(' + tok.length + ')' : ''}`);
+        if (/sign-in|sign-up|get-session/.test(url)) {
+          dlog(`   body: ${shape(d)}`);
+          if (d?.session) dlog(`   session: ${shape(d.session)}`);
+        }
       },
       onError: (ctx) => {
         dlog(`✗ ${short(ctx?.request?.url)} ${ctx?.response?.status ?? ''} ${ctx?.error?.message || ''}`);
