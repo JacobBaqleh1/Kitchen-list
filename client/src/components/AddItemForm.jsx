@@ -23,6 +23,12 @@ export function AddItemForm({ onAdd, defaultLocation = 'fridge' }) {
     }
   };
 
+  const setQty = (n) => setQuantity(Math.max(1, n));
+  const incQty = () => setQty((Number(quantity) || 0) + 1);
+  const decQty = () => setQty((Number(quantity) || 1) - 1);
+
+  const LOCATIONS = ['fridge', 'freezer', 'pantry'];
+
   return (
     <div className="mb-5 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
       <div className="mb-3 text-sm font-semibold text-gray-900">Add item</div>
@@ -40,13 +46,32 @@ export function AddItemForm({ onAdd, defaultLocation = 'fridge' }) {
           </div>
           <div className="flex w-full flex-col gap-1 sm:w-auto">
             <label className="text-xs font-medium text-gray-500">Qty</label>
-            <input
-              type="number"
-              className="input w-full sm:w-17.5"
-              value={quantity}
-              onChange={e => setQuantity(e.target.value)}
-              min="1"
-            />
+            <div className="flex items-stretch">
+              <button
+                type="button"
+                onClick={decQty}
+                disabled={Number(quantity) <= 1}
+                aria-label="Decrease quantity"
+                className="flex h-9 w-9 items-center justify-center rounded-l-lg border border-gray-200 bg-white text-lg leading-none text-gray-600 select-none transition-colors enabled:hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                &minus;
+              </button>
+              <input
+                type="number"
+                className="h-9 w-12 border-y border-gray-200 bg-white text-center text-sm text-gray-900 outline-none focus:border-green-600 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                value={quantity}
+                onChange={e => setQuantity(e.target.value)}
+                min="1"
+              />
+              <button
+                type="button"
+                onClick={incQty}
+                aria-label="Increase quantity"
+                className="flex h-9 w-9 items-center justify-center rounded-r-lg border border-gray-200 bg-white text-lg leading-none text-gray-600 select-none transition-colors enabled:hover:bg-gray-50"
+              >
+                +
+              </button>
+            </div>
           </div>
           <div className="flex w-full flex-col gap-1 sm:w-auto">
             <label className="text-xs font-medium text-gray-500">Expiry (optional)</label>
@@ -58,16 +83,22 @@ export function AddItemForm({ onAdd, defaultLocation = 'fridge' }) {
             />
           </div>
           <div className="flex w-full flex-col gap-1 sm:w-auto">
-            <label className="text-xs font-medium text-gray-500">Location</label>
-            <select
-              className="input w-full sm:w-26.25"
-              value={location}
-              onChange={e => setLocation(e.target.value)}
-            >
-              <option value="fridge">Fridge</option>
-              <option value="freezer">Freezer</option>
-              <option value="pantry">Pantry</option>
-            </select>
+            <span className="text-xs font-medium text-gray-500">Location</span>
+            <div className="flex flex-wrap gap-x-4 gap-y-1.5 pt-1.5">
+              {LOCATIONS.map(loc => (
+                <label key={loc} className="flex cursor-pointer items-center gap-1.5 text-sm text-gray-900">
+                  <input
+                    type="radio"
+                    name="location"
+                    value={loc}
+                    checked={location === loc}
+                    onChange={() => setLocation(loc)}
+                    className="accent-green-600"
+                  />
+                  {loc[0].toUpperCase() + loc.slice(1)}
+                </label>
+              ))}
+            </div>
           </div>
           <div className="flex w-full flex-col justify-end sm:w-auto">
             <button type="submit" className="btn btn-primary w-full sm:w-auto" disabled={loading || !name.trim()}>

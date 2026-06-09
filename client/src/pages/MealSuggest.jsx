@@ -45,7 +45,7 @@ export default function MealSuggest() {
       <div className="mb-6 rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
         <label className="mb-1 block font-semibold text-gray-900">Custom request (optional)</label>
         <p className="mb-3 text-sm text-gray-500">
-          Claude will suggest 3 meals based on your {itemCount} item{itemCount !== 1 ? 's' : ''} in stock.
+          The chef will suggest 3 meals based on your {itemCount} item{itemCount !== 1 ? 's' : ''} in stock.
           Add any extra preferences here.
         </p>
         <textarea

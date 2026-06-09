@@ -72,6 +72,7 @@ function AppWithAuth() {
       replace={(path) => navigate(path, { replace: true })}
       Link={RouterLink}
       redirectTo="/"
+      social={{ providers: ["google", "github"] }}
     >
       <Nav />
       <Routes>
