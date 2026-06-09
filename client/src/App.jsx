@@ -7,7 +7,6 @@ import { auth } from './auth';
 import FridgeView from './pages/FridgeView';
 import MealSuggest from './pages/MealSuggest';
 import Preferences from './pages/Preferences';
-import { DebugPanel } from './components/DebugPanel';
 
 const navLinkBase =
   'flex-1 sm:flex-initial text-center sm:text-left rounded-md px-2 sm:px-3 py-1.5 text-sm font-medium no-underline cursor-pointer select-none transition-colors';
@@ -76,8 +75,6 @@ function AppWithAuth() {
     >
       <Nav />
       <Routes>
-        {/* OAuth/social redirects land here and complete in-context (PWA-safe). */}
-        <Route path="/auth/callback" element={<AuthCallback />} />
         <Route path="/auth/*" element={<AuthPage />} />
         <Route path="/" element={<ProtectedRoute><FridgeView /></ProtectedRoute>} />
         <Route path="/meal" element={<ProtectedRoute><MealSuggest /></ProtectedRoute>} />
@@ -91,7 +88,6 @@ export default function App() {
   return (
     <BrowserRouter>
       <AppWithAuth />
-      <DebugPanel />
     </BrowserRouter>
   );
 }
