@@ -19,7 +19,7 @@ import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 const baseUrl = (process.argv[2] || 'http://localhost:5173').replace(/\/$/, '');
-const paths = (process.argv[3] || '/,/meal,/preferences').split(',');
+const paths = (process.argv[3] || '/,/meal,/settings').split(',');
 
 const viewports = [
   { name: 'desktop', width: 1280, height: 800 },

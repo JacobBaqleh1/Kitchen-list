@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, NavLink, useNavigate, useLocation, Link } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, NavLink, useNavigate, useLocation, Link, Navigate } from 'react-router-dom';
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import {
@@ -10,7 +10,7 @@ import { auth } from './auth';
 import { setAuthToken } from './api';
 import FridgeView from './pages/FridgeView';
 import MealSuggest from './pages/MealSuggest';
-import Preferences from './pages/Preferences';
+import Settings from './pages/Settings';
 
 const navLinkBase =
   'flex-1 sm:flex-initial text-center sm:text-left rounded-md px-2 sm:px-3 py-1.5 text-sm font-medium no-underline cursor-pointer select-none transition-colors';
@@ -27,16 +27,16 @@ function Nav() {
           to="/"
           className="select-none text-xl font-bold tracking-tight text-green-600 no-underline"
         >
-          KitchenList
+          MyKitchenList
         </Link>
         <SignedIn>
           <div className="order-3 flex w-full justify-between gap-1 sm:order-0 sm:w-auto sm:justify-start">
             <NavLink to="/" end className={navLinkClass}>Fridge &amp; Pantry</NavLink>
             <NavLink to="/meal" className={navLinkClass}>Meal Ideas</NavLink>
-            <NavLink to="/preferences" className={navLinkClass}>Preferences</NavLink>
+            <NavLink to="/settings" className={navLinkClass}>Settings</NavLink>
           </div>
           <div className="ml-auto">
-            <UserButton />
+            <UserButton disableDefaultLinks />
           </div>
         </SignedIn>
       </div>
@@ -87,6 +87,7 @@ function AppWithAuth() {
       Link={RouterLink}
       redirectTo="/"
       social={{ providers: ["google", "github"] }}
+      localization={{ SIGN_IN_WITH: 'Continue with' }}
     >
       <SessionTokenSync />
       <Nav />
@@ -94,7 +95,8 @@ function AppWithAuth() {
         <Route path="/auth/*" element={<AuthPage />} />
         <Route path="/" element={<ProtectedRoute><FridgeView /></ProtectedRoute>} />
         <Route path="/meal" element={<ProtectedRoute><MealSuggest /></ProtectedRoute>} />
-        <Route path="/preferences" element={<ProtectedRoute><Preferences /></ProtectedRoute>} />
+        <Route path="/preferences" element={<Navigate to="/settings" replace />} />
+        <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
       </Routes>
     </NeonAuthUIProvider>
   );

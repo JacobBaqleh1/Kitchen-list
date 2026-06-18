@@ -3,12 +3,14 @@ import { eq, and } from 'drizzle-orm';
 import { db } from '../db.js';
 import { items } from '../schema.js';
 import { requireAuth } from '../middleware/auth.js';
+import { consolidateDuplicates, upsertItem } from '../lib/itemMerge.js';
 
 const router = Router();
 router.use(requireAuth);
 
 router.get('/', async (req, res) => {
   try {
+    await consolidateDuplicates(req.user.id);
     const all = await db.select().from(items)
       .where(eq(items.userId, req.user.id))
       .orderBy(items.createdAt);
@@ -22,9 +24,12 @@ router.post('/', async (req, res) => {
   const { name, quantity = 1, expiryDate, location = 'fridge' } = req.body;
   if (!name?.trim()) return res.status(400).json({ error: 'name is required' });
   try {
-    const [item] = await db.insert(items)
-      .values({ userId: req.user.id, name: name.trim(), quantity: Number(quantity), expiryDate: expiryDate || null, location })
-      .returning();
+    const item = await upsertItem(req.user.id, {
+      name,
+      quantity,
+      expiryDate,
+      location,
+    });
     res.status(201).json(item);
   } catch (e) {
     res.status(500).json({ error: e.message });
@@ -83,15 +88,17 @@ router.post('/bulk', async (req, res) => {
     return res.status(400).json({ error: 'items array required' });
   }
   try {
-    const inserted = await db.insert(items)
-      .values(newItems.map(({ name, quantity = 1, location = 'fridge' }) => ({
-        userId: req.user.id,
-        name: name.trim(),
-        quantity: Number(quantity) || 1,
+    const results = [];
+    for (const { name, quantity = 1, location = 'fridge', expiryDate } of newItems) {
+      if (!name?.trim()) continue;
+      results.push(await upsertItem(req.user.id, {
+        name,
+        quantity,
         location,
-      })))
-      .returning();
-    res.status(201).json(inserted);
+        expiryDate,
+      }));
+    }
+    res.status(201).json(results);
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

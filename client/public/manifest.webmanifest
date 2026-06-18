@@ -1,6 +1,6 @@
 {
-  "name": "KitchenList",
-  "short_name": "KitchenList",
+  "name": "MyKitchenList",
+  "short_name": "MyKitchenList",
   "description": "Track your fridge, freezer, and pantry — and get AI meal ideas.",
   "start_url": "/",
   "scope": "/",

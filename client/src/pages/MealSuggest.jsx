@@ -3,9 +3,30 @@ import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '../api';
 import { MealCard } from '../components/MealCard';
 
+import { MEALS_STORAGE_KEY } from '../lib/appSettings';
+
+function loadStoredMeals() {
+  try {
+    const raw = sessionStorage.getItem(MEALS_STORAGE_KEY);
+    if (!raw) return { prompt: '', meals: null };
+    const { prompt = '', meals = null } = JSON.parse(raw);
+    return { prompt, meals: Array.isArray(meals) ? meals : null };
+  } catch {
+    return { prompt: '', meals: null };
+  }
+}
+
+function saveStoredMeals(prompt, meals) {
+  if (!meals?.length) {
+    sessionStorage.removeItem(MEALS_STORAGE_KEY);
+    return;
+  }
+  sessionStorage.setItem(MEALS_STORAGE_KEY, JSON.stringify({ prompt, meals }));
+}
+
 export default function MealSuggest() {
-  const [prompt, setPrompt] = useState('');
-  const [meals, setMeals] = useState(null);
+  const [prompt, setPrompt] = useState(() => loadStoredMeals().prompt);
+  const [meals, setMeals] = useState(() => loadStoredMeals().meals);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [itemCount, setItemCount] = useState(0);
@@ -17,10 +38,13 @@ export default function MealSuggest() {
       .catch(() => {});
   }, []);
 
+  useEffect(() => {
+    saveStoredMeals(prompt, meals);
+  }, [prompt, meals]);
+
   const suggest = async () => {
     setLoading(true);
     setError('');
-    setMeals(null);
     try {
       const data = await apiFetch('/api/meal/suggest', {
         method: 'POST',

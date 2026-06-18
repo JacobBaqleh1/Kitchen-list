@@ -62,8 +62,7 @@ function DetectedItem({ item, index, onChange, onDelete }) {
   );
 }
 
-function AddItemRow({ onAdd, defaultLocation }) {
-  const [open, setOpen] = useState(false);
+function ManualAddForm({ onAdd, onCancel, defaultLocation }) {
   const [name, setName] = useState('');
   const [qty, setQty] = useState(1);
   const [loc, setLoc] = useState(defaultLocation);
@@ -73,19 +72,10 @@ function AddItemRow({ onAdd, defaultLocation }) {
     onAdd({ name: name.trim(), quantity: Number(qty) || 1, location: loc });
     setName('');
     setQty(1);
-    setOpen(false);
   };
 
-  if (!open) {
-    return (
-      <li className="pt-1">
-        <button className="btn btn-ghost btn-sm" onClick={() => setOpen(true)}>+ Add item</button>
-      </li>
-    );
-  }
-
   return (
-    <li className="flex flex-wrap items-center gap-1.5">
+    <div className="mb-3 flex flex-wrap items-center gap-1.5">
       <input
         className="input min-w-0 flex-1"
         placeholder="Item name"
@@ -103,8 +93,8 @@ function AddItemRow({ onAdd, defaultLocation }) {
       />
       <LocationSelect value={loc} onChange={setLoc} />
       <button className="btn btn-primary btn-sm" onClick={submit}>Add</button>
-      <button className="btn btn-ghost btn-sm" onClick={() => setOpen(false)}>Cancel</button>
-    </li>
+      <button className="btn btn-ghost btn-sm" onClick={onCancel}>Cancel</button>
+    </div>
   );
 }
 
@@ -113,6 +103,7 @@ export function PhotoScan({ onItemsConfirmed, location }) {
   const [detected, setDetected] = useState(null);
   const [error, setError] = useState('');
   const [adding, setAdding] = useState(false);
+  const [manualAddOpen, setManualAddOpen] = useState(false);
   const foodRef = useRef();
   const receiptRef = useRef();
 
@@ -147,6 +138,7 @@ export function PhotoScan({ onItemsConfirmed, location }) {
 
   const handleAddItem = (item) => {
     setDetected(prev => [...prev, item]);
+    setManualAddOpen(false);
   };
 
   const confirmAdd = async () => {
@@ -233,13 +225,30 @@ export function PhotoScan({ onItemsConfirmed, location }) {
                 onDelete={handleDelete}
               />
             ))}
-            <AddItemRow onAdd={handleAddItem} />
           </ul>
+          {manualAddOpen && (
+            <ManualAddForm
+              onAdd={handleAddItem}
+              onCancel={() => setManualAddOpen(false)}
+              defaultLocation={location}
+            />
+          )}
           <div className="flex flex-wrap gap-2">
+            {!manualAddOpen && (
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                onClick={() => setManualAddOpen(true)}
+              >
+                + Add item
+              </button>
+            )}
             <button className="btn btn-primary btn-sm" onClick={confirmAdd} disabled={adding || !detected.length}>
               {adding ? 'Adding...' : `Add all ${detected.length} item${detected.length !== 1 ? 's' : ''}`}
             </button>
-            <button className="btn btn-ghost btn-sm" onClick={() => setDetected(null)}>Dismiss</button>
+            <button className="btn btn-ghost btn-sm" onClick={() => { setDetected(null); setManualAddOpen(false); }}>
+              Dismiss
+            </button>
           </div>
         </div>
       )}

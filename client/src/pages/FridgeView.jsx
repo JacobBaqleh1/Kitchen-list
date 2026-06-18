@@ -4,12 +4,28 @@ import { apiFetch } from '../api';
 import { ItemCard } from '../components/ItemCard';
 import { AddItemForm } from '../components/AddItemForm';
 import { PhotoScan } from '../components/PhotoScan';
+import { loadItemSort, saveItemSort } from '../lib/appSettings';
 
 const tabBase = 'flex-1 sm:flex-initial rounded-md px-3 sm:px-5 py-1.5 text-sm font-medium cursor-pointer transition-colors';
+
+const SORT_OPTIONS = [
+  { value: 'recent', label: 'Last entered' },
+  { value: 'alpha', label: 'A–Z' },
+];
+
+function sortItems(list, sortBy) {
+  const sorted = [...list];
+  if (sortBy === 'alpha') {
+    return sorted.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
+  }
+  return sorted.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+}
 
 export default function FridgeView() {
   const [items, setItems] = useState([]);
   const [activeTab, setActiveTab] = useState('fridge');
+  const [search, setSearch] = useState('');
+  const [sortBy, setSortBy] = useState(() => loadItemSort());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const navigate = useNavigate();
@@ -53,13 +69,17 @@ export default function FridgeView() {
   };
 
   const tabItems = items.filter(i => i.location === activeTab);
-  // In stock shows most recently entered first (API returns oldest-first).
-  const inStock = tabItems
-    .filter(i => !i.checked)
-    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  const used = tabItems.filter(i => i.checked);
+  const searchQuery = search.trim().toLowerCase();
+  const matchesSearch = (item) =>
+    !searchQuery || item.name.toLowerCase().includes(searchQuery);
+  const inStock = sortItems(tabItems.filter(i => !i.checked), sortBy);
+  const used = sortItems(tabItems.filter(i => i.checked), sortBy);
+  const filteredInStock = inStock.filter(matchesSearch);
+  const filteredUsed = used.filter(matchesSearch);
   const uncheckedCount = items.filter(i => !i.checked).length;
   const hasUnchecked = uncheckedCount > 0;
+
+  const tabLabel = activeTab.charAt(0).toUpperCase() + activeTab.slice(1);
 
   const tabClass = (tab) =>
     `${tabBase} ${activeTab === tab ? 'bg-white text-gray-900 shadow-sm' : 'bg-transparent text-gray-500'}`;
@@ -88,10 +108,51 @@ export default function FridgeView() {
       <PhotoScan onItemsConfirmed={handleBulkAdd} location={activeTab} />
 
       <div className="mb-6 flex w-full gap-1 rounded-lg bg-gray-200 p-1 sm:w-fit">
-        <button className={tabClass('fridge')} onClick={() => setActiveTab('fridge')}>Fridge</button>
-        <button className={tabClass('freezer')} onClick={() => setActiveTab('freezer')}>Freezer</button>
-        <button className={tabClass('pantry')} onClick={() => setActiveTab('pantry')}>Pantry</button>
+        <button className={tabClass('fridge')} onClick={() => { setActiveTab('fridge'); setSearch(''); }}>Fridge</button>
+        <button className={tabClass('freezer')} onClick={() => { setActiveTab('freezer'); setSearch(''); }}>Freezer</button>
+        <button className={tabClass('pantry')} onClick={() => { setActiveTab('pantry'); setSearch(''); }}>Pantry</button>
       </div>
+
+      {!loading && (inStock.length > 0 || used.length > 0) && (
+        <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="relative min-w-0 flex-1">
+            <input
+              type="text"
+              role="searchbox"
+              inputMode="search"
+              className="input w-full pr-9"
+              placeholder={`Search ${tabLabel.toLowerCase()}...`}
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              aria-label={`Search items in ${tabLabel.toLowerCase()}`}
+            />
+            {search && (
+              <button
+                type="button"
+                className="absolute top-1/2 right-2.5 -translate-y-1/2 rounded px-1.5 text-lg leading-none text-gray-400 hover:text-gray-600"
+                onClick={() => setSearch('')}
+                aria-label="Clear search"
+              >
+                &times;
+              </button>
+            )}
+          </div>
+          <select
+            className="input w-full shrink-0 sm:w-40"
+            value={sortBy}
+            onChange={e => {
+              const value = e.target.value;
+              setSortBy(value);
+              saveItemSort(value);
+            }}
+            aria-label="Sort items"
+          >
+            {SORT_OPTIONS.map(({ value, label }) => (
+              <option key={value} value={value}>{label}</option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {error && (
         <div className="mb-4 rounded-xl border border-red-300 bg-red-100 px-4 py-3 text-sm text-red-800">{error}</div>
@@ -105,11 +166,11 @@ export default function FridgeView() {
       ) : (
         <>
           <div className="mb-2.5 mt-5 text-xs font-semibold uppercase tracking-wider text-gray-500">
-            In stock ({inStock.length})
+            In stock ({searchQuery ? `${filteredInStock.length} of ${inStock.length}` : inStock.length})
           </div>
-          {inStock.length ? (
+          {filteredInStock.length ? (
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-              {inStock.map(item => (
+              {filteredInStock.map(item => (
                 <ItemCard
                   key={item.id}
                   item={item}
@@ -121,17 +182,20 @@ export default function FridgeView() {
             </div>
           ) : (
             <div className="rounded-xl border border-dashed border-gray-200 bg-white p-6 text-center text-sm text-gray-500">
-              No items in stock — add some above
+              {searchQuery
+                ? `No items match "${search.trim()}"`
+                : 'No items in stock — add some above'}
             </div>
           )}
 
-          {used.length > 0 && (
+          {(used.length > 0 || searchQuery) && (
             <>
               <div className="mb-2.5 mt-5 text-xs font-semibold uppercase tracking-wider text-gray-500">
-                Used / out ({used.length})
+                Used / out ({searchQuery ? `${filteredUsed.length} of ${used.length}` : used.length})
               </div>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                {used.map(item => (
+              {filteredUsed.length ? (
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                  {filteredUsed.map(item => (
                   <ItemCard
                     key={item.id}
                     item={item}
@@ -139,8 +203,13 @@ export default function FridgeView() {
                     onEdit={handleEdit}
                     onDelete={handleDelete}
                   />
-                ))}
-              </div>
+                  ))}
+                </div>
+              ) : searchQuery ? (
+                <div className="rounded-xl border border-dashed border-gray-200 bg-white p-6 text-center text-sm text-gray-500">
+                  No used items match &ldquo;{search.trim()}&rdquo;
+                </div>
+              ) : null}
             </>
           )}
         </>
