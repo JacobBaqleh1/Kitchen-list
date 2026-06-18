@@ -192,8 +192,10 @@ export function PhotoScan({ onItemsConfirmed, location }) {
         </button>
       </div>
 
-      <input ref={foodRef} type="file" accept="image/*" capture="environment" hidden onChange={e => handleFile(e, 'food')} />
-      <input ref={receiptRef} type="file" accept="image/*" capture="environment" hidden onChange={e => handleFile(e, 'receipt')} />
+      {/* No `capture` attribute: lets mobile offer both the camera and the
+          existing photo library / files, instead of forcing the camera. */}
+      <input ref={foodRef} type="file" accept="image/*" hidden onChange={e => handleFile(e, 'food')} />
+      <input ref={receiptRef} type="file" accept="image/*" hidden onChange={e => handleFile(e, 'receipt')} />
 
       {scanning && (
         <div className="mt-2 inline-flex items-center gap-2 text-sm text-gray-500">
@@ -203,7 +205,16 @@ export function PhotoScan({ onItemsConfirmed, location }) {
       )}
 
       {error && (
-        <div className="mt-3 rounded-xl border border-red-300 bg-red-100 px-4 py-3 text-sm text-red-800">{error}</div>
+        <div className="mt-3 flex items-center gap-2 rounded-xl border border-red-300 bg-red-100 px-4 py-3 text-sm text-red-800">
+          <span className="flex-1">{error}</span>
+          <button
+            onClick={() => setError('')}
+            aria-label="Dismiss error"
+            className="flex shrink-0 cursor-pointer items-center border-0 bg-transparent p-0 text-lg leading-none text-red-800 opacity-65 hover:opacity-100"
+          >
+            &times;
+          </button>
+        </div>
       )}
 
       {detected && (

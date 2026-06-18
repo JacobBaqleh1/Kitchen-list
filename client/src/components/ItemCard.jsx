@@ -5,6 +5,7 @@ export function ItemCard({ item, onToggle, onEdit, onDelete }) {
   const [editName, setEditName] = useState(item.name);
   const [editQty, setEditQty] = useState(item.quantity);
   const [editExpiry, setEditExpiry] = useState(item.expiryDate || '');
+  const [editLocation, setEditLocation] = useState(item.location);
 
   const saveEdit = async () => {
     if (!editName.trim()) return;
@@ -12,6 +13,7 @@ export function ItemCard({ item, onToggle, onEdit, onDelete }) {
       name: editName.trim(),
       quantity: Number(editQty),
       expiryDate: editExpiry || null,
+      location: editLocation,
     });
     setEditing(false);
   };
@@ -20,6 +22,7 @@ export function ItemCard({ item, onToggle, onEdit, onDelete }) {
     setEditName(item.name);
     setEditQty(item.quantity);
     setEditExpiry(item.expiryDate || '');
+    setEditLocation(item.location);
     setEditing(false);
   };
 
@@ -60,6 +63,15 @@ export function ItemCard({ item, onToggle, onEdit, onDelete }) {
           value={editExpiry}
           onChange={e => setEditExpiry(e.target.value)}
         />
+        <select
+          className="input w-full sm:w-auto"
+          value={editLocation}
+          onChange={e => setEditLocation(e.target.value)}
+        >
+          <option value="fridge">Fridge</option>
+          <option value="freezer">Freezer</option>
+          <option value="pantry">Pantry</option>
+        </select>
         <button className="btn btn-primary btn-sm" onClick={saveEdit}>Save</button>
         <button className="btn btn-secondary btn-sm" onClick={cancelEdit}>Cancel</button>
       </div>
