@@ -1,6 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { auth } from '../auth';
 import { apiFetch } from '../api';
+import { readItemsCache, writeItemsCache, prefetchItems } from '../lib/itemsCache';
 import { ItemCard } from '../components/ItemCard';
 import { AddItemForm } from '../components/AddItemForm';
 import { PhotoScan } from '../components/PhotoScan';
@@ -22,26 +24,44 @@ function sortItems(list, sortBy) {
 }
 
 export default function FridgeView() {
-  const [items, setItems] = useState([]);
+  const { data: sessionData } = auth.useSession();
+  const userId = sessionData?.user?.id ?? null;
+  const cachedItems = userId ? readItemsCache(userId) : null;
+
+  const [items, setItems] = useState(() => cachedItems ?? []);
   const [activeTab, setActiveTab] = useState('fridge');
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState(() => loadItemSort());
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => cachedItems === null);
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const fetchItems = async () => {
+  const fetchItems = useCallback(async () => {
+    if (!userId) return;
     try {
-      const data = await apiFetch('/api/items');
+      const load = () => apiFetch('/api/items').then((data) => {
+        writeItemsCache(userId, data);
+        return data;
+      });
+      const data = await (prefetchItems(userId, load) ?? load());
       setItems(data);
+      setError('');
     } catch (e) {
       setError(e.message);
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
 
-  useEffect(() => { fetchItems(); }, []);
+  useEffect(() => {
+    if (!userId) return;
+    const cached = readItemsCache(userId);
+    if (cached) {
+      setItems(cached);
+      setLoading(false);
+    }
+    fetchItems();
+  }, [userId, fetchItems]);
 
   const handleAdd = async (payload) => {
     await apiFetch('/api/items', { method: 'POST', body: JSON.stringify(payload) });

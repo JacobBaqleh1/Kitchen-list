@@ -7,7 +7,8 @@ import {
   SignedIn, SignedOut, AuthCallback, RedirectToSignIn,
 } from '@neondatabase/auth-ui';
 import { auth } from './auth';
-import { setAuthToken } from './api';
+import { setAuthToken, apiFetch } from './api';
+import { prefetchItems } from './lib/itemsCache';
 import FridgeView from './pages/FridgeView';
 import MealSuggest from './pages/MealSuggest';
 import Settings from './pages/Settings';
@@ -50,7 +51,17 @@ function Nav() {
 function SessionTokenSync() {
   const { data } = auth.useSession();
   const token = data?.session?.token ?? null;
-  useEffect(() => { setAuthToken(token); }, [token]);
+  const userId = data?.user?.id ?? null;
+
+  // Set during render so child effects can fetch immediately (no getSession wait).
+  setAuthToken(token);
+
+  useEffect(() => {
+    if (token && userId) {
+      prefetchItems(userId, () => apiFetch('/api/items'));
+    }
+  }, [token, userId]);
+
   return null;
 }
 

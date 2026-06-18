@@ -10,7 +10,6 @@ router.use(requireAuth);
 
 router.get('/', async (req, res) => {
   try {
-    await consolidateDuplicates(req.user.id);
     const all = await db.select().from(items)
       .where(eq(items.userId, req.user.id))
       .orderBy(items.createdAt);
