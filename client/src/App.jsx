@@ -6,7 +6,7 @@ import {
   NeonAuthUIProvider, AuthView, UserButton,
   SignedIn, SignedOut, RedirectToSignIn,
 } from '@neondatabase/auth-ui';
-import { auth, usePersistentSession, clientSignOut } from './auth';
+import { auth, usePersistentSession, clientSignOut, useAuthError, clearAuthError } from './auth';
 import { setAuthToken, apiFetch } from './api';
 import { prefetchItems } from './lib/itemsCache';
 import FridgeView from './pages/FridgeView';
@@ -179,7 +179,12 @@ function AuthPage() {
   const location = useLocation();
   const path = location.pathname.replace('/auth/', '');
   const { data, isPending } = usePersistentSession();
+  const authError = useAuthError();
   const isSignOut = path === 'sign-out';
+
+  useEffect(() => {
+    clearAuthError();
+  }, [path]);
 
   if (!isSignOut && data?.user) {
     return <Navigate to="/" replace />;
@@ -217,6 +222,14 @@ function AuthPage() {
         <div className="flex flex-1 items-center justify-center px-5 py-10 sm:px-8">
           <div className="w-full max-w-md">
             <BrandMark className="mb-8 hidden lg:flex" />
+            {authError && (
+              <div
+                role="alert"
+                className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm font-medium text-red-700"
+              >
+                {authError}
+              </div>
+            )}
             <AuthView path={path} />
           </div>
         </div>

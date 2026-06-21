@@ -33,12 +33,55 @@ export const auth = createAuthClient(import.meta.env.VITE_NEON_AUTH_URL, {
           markPersistedValidationValid(data.session.token);
           notifyPersistedSession();
         }
+        clearAuthError();
       } catch {
         /* never let session capture break the auth flow */
       }
     },
+    // Surface auth request failures to the UI so they're visible (we render them
+    // above the form). Without this, a failed sign-in on an iOS PWA can look like
+    // a spinner that silently stops with no feedback.
+    onError: (ctx) => {
+      try {
+        const status = ctx?.response?.status;
+        const message =
+          ctx?.error?.message ||
+          ctx?.error?.statusText ||
+          (status ? `Request failed (${status})` : 'Network request failed');
+        notifyAuthError(message);
+      } catch {
+        /* never let error reporting break the auth flow */
+      }
+    },
   },
 });
+
+// Captured auth request error, surfaced above the sign-in form.
+const authErrorStore = { message: null, listeners: new Set() };
+
+function notifyAuthError(message) {
+  authErrorStore.message = message;
+  for (const listener of authErrorStore.listeners) listener();
+}
+
+export function clearAuthError() {
+  if (authErrorStore.message === null) return;
+  authErrorStore.message = null;
+  for (const listener of authErrorStore.listeners) listener();
+}
+
+function subscribeAuthError(listener) {
+  authErrorStore.listeners.add(listener);
+  return () => authErrorStore.listeners.delete(listener);
+}
+
+function getAuthErrorSnapshot() {
+  return authErrorStore.message;
+}
+
+export function useAuthError() {
+  return useSyncExternalStore(subscribeAuthError, getAuthErrorSnapshot, () => null);
+}
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 const IOS_STANDALONE_SESSION_KEY = 'mykitchenlist.iosStandaloneSession';
@@ -337,10 +380,11 @@ export function usePersistentSession() {
       return;
     }
 
-    // Live session resolved with nothing. If a token was persisted (iOS dropped
-    // the cookie, or someone else opened the installed app), ask the server to
-    // confirm it before we ever render as signed in.
-    if (liveIsPending) return;
+    // If a token was persisted (iOS dropped the cookie, or someone else opened
+    // the installed app), ask the server to confirm it before we ever render as
+    // signed in. We don't wait on liveIsPending here: the cross-site session
+    // check can hang forever in an iOS Private-tab PWA, and validatePersistedSession
+    // is deduped per token so this stays cheap.
     const token = getStoredSession()?.session?.token;
     if (token) validatePersistedSession(token);
   }, [liveSessionData, liveIsUsable, liveIsPending]);
@@ -361,20 +405,24 @@ export function usePersistentSession() {
     return { ...liveSession, refetch };
   }
 
-  // Still loading the live session — let its own pending state flow through.
+  const persistedSession = getStoredSession();
+
+  // A freshly captured / server-confirmed token signs the user in even while
+  // the live session check is still pending. In an iOS Private-tab PWA that
+  // cross-site check can hang forever, so waiting on it (the old behavior) left
+  // login stuck on an endless spinner with a perfectly valid token in hand.
+  if (persistedSession && validationStatus === 'valid') {
+    return { ...liveSession, data: persistedSession, isPending: false, refetch };
+  }
+
+  // No confirmed token yet — let the live session's own pending state flow
+  // through while it (maybe) resolves.
   if (liveIsPending) {
     return { ...liveSession, refetch };
   }
 
-  const persistedSession = getStoredSession();
   if (!persistedSession) {
     return { ...liveSession, refetch };
-  }
-
-  // We have a stored token but no live session. Never trust localStorage alone:
-  // only report signed in once the server round-trip confirms it.
-  if (validationStatus === 'valid') {
-    return { ...liveSession, data: persistedSession, isPending: false, refetch };
   }
 
   // Confirmed unusable (rejected/error) — present as signed out so guards send
