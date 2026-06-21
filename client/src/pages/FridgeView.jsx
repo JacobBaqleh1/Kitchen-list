@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { auth } from '../auth';
+import { usePersistentSession } from '../auth';
 import { apiFetch } from '../api';
 import { readItemsCache, writeItemsCache, prefetchItems } from '../lib/itemsCache';
 import { ItemCard } from '../components/ItemCard';
@@ -24,7 +24,7 @@ function sortItems(list, sortBy) {
 }
 
 export default function FridgeView() {
-  const { data: sessionData } = auth.useSession();
+  const { data: sessionData } = usePersistentSession();
   const userId = sessionData?.user?.id ?? null;
   const cachedItems = userId ? readItemsCache(userId) : null;
 

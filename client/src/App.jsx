@@ -4,9 +4,9 @@ import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from '@vercel/speed-insights/react';
 import {
   NeonAuthUIProvider, AuthView, UserButton,
-  SignedIn, SignedOut, AuthCallback, RedirectToSignIn,
+  SignedIn, SignedOut, RedirectToSignIn,
 } from '@neondatabase/auth-ui';
-import { auth } from './auth';
+import { auth, usePersistentSession } from './auth';
 import { setAuthToken, apiFetch } from './api';
 import { prefetchItems } from './lib/itemsCache';
 import FridgeView from './pages/FridgeView';
@@ -52,7 +52,7 @@ function Nav() {
 // the per-call auth.getSession() round trip. Handles refresh, logout, and
 // user-switch automatically since it tracks the reactive session.
 function SessionTokenSync() {
-  const { data } = auth.useSession();
+  const { data } = usePersistentSession();
   const token = data?.session?.token ?? null;
   const userId = data?.user?.id ?? null;
 
@@ -91,11 +91,14 @@ const RouterLink = ({ href, children, ...props }) => (
   <Link to={href ?? '/'} {...props}>{children}</Link>
 );
 
+const authHooks = { useSession: usePersistentSession };
+
 function AppWithAuth() {
   const navigate = useNavigate();
   return (
     <NeonAuthUIProvider
       authClient={auth}
+      hooks={authHooks}
       navigate={navigate}
       replace={(path) => navigate(path, { replace: true })}
       Link={RouterLink}

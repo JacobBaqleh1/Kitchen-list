@@ -5,7 +5,9 @@ const BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 // Auth token cached in memory and kept in sync with the live session by
 // <SessionTokenSync/> in App.jsx. This avoids a network round trip to the auth
 // server (auth.getSession()) before every request — the token is already known
-// once the user is signed in. Memory-only: never persisted, cleared on logout.
+// once the user is signed in. On iOS standalone PWAs the cached token comes
+// from a persisted session only after the server has confirmed it (see
+// usePersistentSession), so we never attach an unvalidated localStorage token.
 let authToken = null;
 export function setAuthToken(token) {
   authToken = token ?? null;

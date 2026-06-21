@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { auth } from '../auth';
+import { usePersistentSession } from '../auth';
 import { apiFetchPublic } from '../api';
 import { ChatPanel } from '../components/ChatPanel';
 
@@ -82,7 +82,7 @@ function NameGate({ onJoin }) {
 
 export default function SharedListView() {
   const { token } = useParams();
-  const { data: sessionData } = auth.useSession();
+  const { data: sessionData } = usePersistentSession();
   const signedIn = !!sessionData?.user;
   const sessionName = sessionData?.user?.name ?? null;
   const authToken = sessionData?.session?.token ?? null;
