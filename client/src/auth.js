@@ -4,6 +4,39 @@ import { BetterAuthReactAdapter } from '@neondatabase/auth/react';
 
 export const auth = createAuthClient(import.meta.env.VITE_NEON_AUTH_URL, {
   adapter: BetterAuthReactAdapter(),
+  fetchOptions: {
+    // Detect the sign-out request and flip the app to signed-out immediately.
+    // The auth client is a better-auth Proxy whose get-trap ignores assigned
+    // properties, so we cannot wrap auth.signOut directly — this global hook is
+    // the reliable interception point and runs no matter how sign-out fires.
+    onRequest: (request) => {
+      try {
+        if (String(request?.url ?? '').includes('/sign-out')) beginExplicitSignOut();
+      } catch {
+        /* never let interception break the request */
+      }
+    },
+    // iOS standalone PWAs frequently can't persist the cross-site auth cookie,
+    // so the session token (delivered via set-auth-jwt and injected here) is the
+    // only thing that keeps the user signed in. Capture it from every successful
+    // auth response — login, sign-up, refresh. On other platforms
+    // persistIOSStandaloneSession is a no-op, so this is harmless there.
+    onSuccess: (ctx) => {
+      try {
+        const data = ctx?.data;
+        if (data?.session?.token && data?.user) {
+          // A fresh session supersedes any prior explicit sign-out. Without this
+          // an iOS standalone re-login would stay suppressed (no live cookie
+          // ever clears the flag) and lock the user out.
+          clearExplicitSignOut();
+          persistIOSStandaloneSession({ session: data.session, user: data.user });
+          notifyPersistedSession();
+        }
+      } catch {
+        /* never let session capture break the auth flow */
+      }
+    },
+  },
 });
 
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
@@ -111,6 +144,25 @@ function getValidationStatus() {
   return persistedValidation.status;
 }
 
+// Bumped whenever a session is captured/persisted from an auth response, so
+// usePersistentSession consumers re-render and pick it up (e.g. an iOS login
+// where no live cookie is set, so auth.useSession() never updates on its own).
+const persistedSessionStore = { version: 0, listeners: new Set() };
+
+function notifyPersistedSession() {
+  persistedSessionStore.version += 1;
+  for (const listener of persistedSessionStore.listeners) listener();
+}
+
+function subscribePersistedSession(listener) {
+  persistedSessionStore.listeners.add(listener);
+  return () => persistedSessionStore.listeners.delete(listener);
+}
+
+function getPersistedSessionVersion() {
+  return persistedSessionStore.version;
+}
+
 function notifyExplicitSignOut() {
   for (const listener of explicitSignOut.listeners) listener();
 }
@@ -183,24 +235,21 @@ async function validatePersistedSession(token) {
   notifyValidation();
 }
 
-const originalSignOut = auth.signOut.bind(auth);
 let lastLiveToken = null;
 
-auth.signOut = async (...args) => {
-  // Flip the app to signed-out and drop any persisted session synchronously, so
-  // sign-out is instant and never depends on the network.
+// Explicit, app-driven sign-out. We can't wrap auth.signOut (the better-auth
+// Proxy ignores assigned properties), so callers must use this. It clears local
+// session state synchronously — so sign-out is instant and the UI never depends
+// on the network — then fires the real server sign-out in the background. In an
+// iOS standalone PWA that cross-site request can stall indefinitely, so it must
+// never be awaited on the UI path (that was the endless-spinner bug).
+export function clientSignOut() {
   beginExplicitSignOut();
-
-  // Best-effort server-side sign-out. In an iOS standalone PWA the cross-site
-  // auth request can stall indefinitely; awaiting it would hang the auth UI's
-  // sign-out view (it only redirects once this promise settles) and leave the
-  // user stuck on a spinner. Run it in the background and clean up regardless,
-  // capping the wait so cleanup still runs even if the request never settles.
-  Promise.race([
-    Promise.resolve().then(() => originalSignOut(...args)).catch(() => {}),
-    new Promise((resolve) => setTimeout(resolve, 2000)),
-  ]).finally(finishExplicitSignOut);
-};
+  return Promise.resolve()
+    .then(() => auth.signOut())
+    .catch(() => {})
+    .finally(finishExplicitSignOut);
+}
 
 export function usePersistentSession() {
   const liveSession = auth.useSession();
@@ -214,6 +263,11 @@ export function usePersistentSession() {
     subscribeExplicitSignOut,
     getExplicitSignOutSnapshot,
     () => '0:',
+  );
+  useSyncExternalStore(
+    subscribePersistedSession,
+    getPersistedSessionVersion,
+    () => 0,
   );
 
   const liveIsUsable = hasUsableSession(liveSessionData);

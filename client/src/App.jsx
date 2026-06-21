@@ -6,7 +6,7 @@ import {
   NeonAuthUIProvider, AuthView, UserButton,
   SignedIn, SignedOut, RedirectToSignIn,
 } from '@neondatabase/auth-ui';
-import { auth, usePersistentSession } from './auth';
+import { auth, usePersistentSession, clientSignOut } from './auth';
 import { setAuthToken, apiFetch } from './api';
 import { prefetchItems } from './lib/itemsCache';
 import FridgeView from './pages/FridgeView';
@@ -159,6 +159,22 @@ function AuthArtPanel() {
   );
 }
 
+function SignOutHandler() {
+  const navigate = useNavigate();
+  useEffect(() => {
+    // clientSignOut clears local state synchronously and fires the server
+    // sign-out in the background (never awaited), so we can redirect right away.
+    clientSignOut();
+    navigate('/auth/sign-in', { replace: true });
+  }, [navigate]);
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-white">
+      <div className="spinner size-8" />
+    </div>
+  );
+}
+
 function AuthPage() {
   const location = useLocation();
   const path = location.pathname.replace('/auth/', '');
@@ -169,13 +185,11 @@ function AuthPage() {
     return <Navigate to="/" replace />;
   }
 
-  // Sign-out is a brief processing/redirect view — keep it minimal, no chrome.
+  // The library's sign-out view waits on a cross-site network call before
+  // redirecting, which hangs forever in an iOS standalone PWA. Drive sign-out
+  // ourselves instead: clear local session state and redirect immediately.
   if (isSignOut) {
-    return (
-      <div className="flex min-h-screen items-center justify-center px-4">
-        <AuthView path={path} />
-      </div>
-    );
+    return <SignOutHandler />;
   }
 
   if (isPending) {
