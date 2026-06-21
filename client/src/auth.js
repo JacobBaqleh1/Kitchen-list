@@ -163,7 +163,7 @@ async function validatePersistedSession(token) {
   persistedValidation.status = 'validating';
   notifyValidation();
 
-  let nextStatus = 'error';
+  let nextStatus;
   try {
     const res = await fetch(`${API_BASE}/api/auth/session`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -211,7 +211,10 @@ export function usePersistentSession() {
 
   const liveIsUsable = hasUsableSession(liveSessionData);
   const liveToken = liveSessionData?.session?.token ?? null;
-  lastLiveToken = liveToken;
+
+  useEffect(() => {
+    lastLiveToken = liveToken;
+  }, [liveToken]);
 
   useEffect(() => {
     if (!explicitSignOut.active || !liveToken) return;
