@@ -1,11 +1,12 @@
-import { auth } from './auth';
+import { auth, readPersistedIOSStandaloneSession } from './auth';
 
 const BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 // Auth token cached in memory and kept in sync with the live session by
 // <SessionTokenSync/> in App.jsx. This avoids a network round trip to the auth
 // server (auth.getSession()) before every request — the token is already known
-// once the user is signed in. Memory-only: never persisted, cleared on logout.
+// once the user is signed in. iOS standalone PWAs can also restore a persisted
+// token when WebKit drops the cross-site Neon Auth cookie between launches.
 let authToken = null;
 export function setAuthToken(token) {
   authToken = token ?? null;
@@ -16,7 +17,7 @@ export function setAuthToken(token) {
 async function currentToken() {
   if (authToken) return authToken;
   const { data } = await auth.getSession();
-  return data?.session?.token ?? null;
+  return data?.session?.token ?? readPersistedIOSStandaloneSession()?.session?.token ?? null;
 }
 
 export async function apiFetch(path, options = {}) {
@@ -38,7 +39,7 @@ export async function apiFetch(path, options = {}) {
   // session and retry before surfacing an auth error.
   if (res.status === 401 && token) {
     const { data } = await auth.getSession();
-    const fresh = data?.session?.token ?? null;
+    const fresh = data?.session?.token ?? readPersistedIOSStandaloneSession()?.session?.token ?? null;
     setAuthToken(fresh);
     if (fresh && fresh !== token) res = await send(fresh);
   }

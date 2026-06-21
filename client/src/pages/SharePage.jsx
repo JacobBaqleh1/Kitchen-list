@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { auth } from '../auth';
+import { usePersistentSession } from '../auth';
 import { apiFetch } from '../api';
 import { ChatPanel } from '../components/ChatPanel';
 
@@ -48,7 +48,7 @@ function ShareRow({ share, onCopy, onShare, onRevoke, onOpenChat, active, copied
 }
 
 export default function SharePage() {
-  const { data: sessionData } = auth.useSession();
+  const { data: sessionData } = usePersistentSession();
   const authToken = sessionData?.session?.token ?? null;
   const ownerName = sessionData?.user?.name ?? null;
 
