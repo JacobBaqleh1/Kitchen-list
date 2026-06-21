@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect } from 'react';
 import { createAuthClient } from '@neondatabase/neon-js/auth';
 import { BetterAuthReactAdapter } from '@neondatabase/auth/react';
 
@@ -91,32 +91,28 @@ auth.signOut = async (...args) => {
 
 export function usePersistentSession() {
   const liveSession = auth.useSession();
-  const [persistedSession, setPersistedSession] = useState(() => readPersistedIOSStandaloneSession());
+  const { data: liveSessionData, refetch: liveRefetch } = liveSession;
 
   useEffect(() => {
     if (!isIOSStandalone()) return;
 
-    if (hasUsableSession(liveSession.data)) {
-      persistIOSStandaloneSession(liveSession.data);
-      setPersistedSession(liveSession.data);
-      return;
+    if (hasUsableSession(liveSessionData)) {
+      persistIOSStandaloneSession(liveSessionData);
     }
-
-    setPersistedSession(readPersistedIOSStandaloneSession());
-  }, [liveSession.data]);
+  }, [liveSessionData]);
 
   const refetch = useCallback(
     async (...args) => {
-      const result = await liveSession.refetch?.(...args);
-      setPersistedSession(readPersistedIOSStandaloneSession());
-      return result;
+      return liveRefetch?.(...args);
     },
-    [liveSession.refetch],
+    [liveRefetch],
   );
 
-  if (liveSession.data) {
+  if (liveSessionData) {
     return { ...liveSession, refetch };
   }
+
+  const persistedSession = readPersistedIOSStandaloneSession();
 
   if (persistedSession) {
     return {
