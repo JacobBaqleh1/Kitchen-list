@@ -9,6 +9,7 @@ import preferencesRouter from './routes/preferences.js';
 import mealRouter from './routes/meal.js';
 import photosRouter from './routes/photos.js';
 import sharesRouter from './routes/shares.js';
+import { requireAuth } from './middleware/auth.js';
 import { initShareChat } from './ws/shareChat.js';
 
 const app = express();
@@ -34,6 +35,14 @@ app.use('/api/preferences', preferencesRouter);
 app.use('/api/meal', mealRouter);
 app.use('/api/photos', photosRouter);
 app.use('/api/shares', sharesRouter);
+
+// Authoritative session check: verifies the bearer token server-side and echoes
+// the user it resolves to. Clients (notably the iOS standalone PWA, which can
+// only persist a token in localStorage) call this before trusting a restored
+// session, so a stored token alone never grants access to the UI.
+app.get('/api/auth/session', requireAuth, (req, res) => {
+  res.json({ user: req.user });
+});
 
 // Touches the DB so UptimeRobot's 5-min ping keeps both the Render process and
 // the Neon compute warm (SELECT 1 = negligible payload, no auth required).
