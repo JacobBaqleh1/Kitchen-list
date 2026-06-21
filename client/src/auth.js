@@ -187,12 +187,19 @@ const originalSignOut = auth.signOut.bind(auth);
 let lastLiveToken = null;
 
 auth.signOut = async (...args) => {
+  // Flip the app to signed-out and drop any persisted session synchronously, so
+  // sign-out is instant and never depends on the network.
   beginExplicitSignOut();
-  try {
-    return await originalSignOut(...args);
-  } finally {
-    finishExplicitSignOut();
-  }
+
+  // Best-effort server-side sign-out. In an iOS standalone PWA the cross-site
+  // auth request can stall indefinitely; awaiting it would hang the auth UI's
+  // sign-out view (it only redirects once this promise settles) and leave the
+  // user stuck on a spinner. Run it in the background and clean up regardless,
+  // capping the wait so cleanup still runs even if the request never settles.
+  Promise.race([
+    Promise.resolve().then(() => originalSignOut(...args)).catch(() => {}),
+    new Promise((resolve) => setTimeout(resolve, 2000)),
+  ]).finally(finishExplicitSignOut);
 };
 
 export function usePersistentSession() {
