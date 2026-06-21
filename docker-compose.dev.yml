@@ -1,0 +1,36 @@
+# Local development backing services for KitchenList.
+#
+# The server uses the @neondatabase/serverless driver, which only speaks Neon's
+# SQL-over-HTTP / WebSocket protocol. This compose runs a local Postgres plus a
+# Neon-compatible proxy so the app can run unchanged against a local database.
+#
+#   docker compose -f docker-compose.dev.yml up -d
+#
+# Then run the server with the dev preload (see AGENTS.md):
+#   cd server && NODE_OPTIONS='--import ./dev/neon-local.mjs' npm run dev
+services:
+  postgres:
+    image: postgres:17
+    command: '-d 1'
+    restart: unless-stopped
+    ports:
+      - '5432:5432'
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: main
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d main']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  neon-proxy:
+    image: ghcr.io/timowilhelm/local-neon-http-proxy:main
+    environment:
+      - PG_CONNECTION_STRING=postgres://postgres:postgres@postgres:5432/main
+    ports:
+      - '4444:4444'
+    depends_on:
+      postgres:
+        condition: service_healthy
