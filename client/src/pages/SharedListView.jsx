@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { auth } from '../auth';
 import { apiFetchPublic } from '../api';
@@ -57,7 +57,7 @@ function NameGate({ onJoin }) {
         e.preventDefault();
         if (name.trim()) onJoin(name.trim());
       }}
-      className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm"
+      className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5"
     >
       <div className="mb-0.5 font-semibold text-gray-900">Join the chat</div>
       <p className="mb-3 text-sm text-gray-500">
@@ -65,14 +65,14 @@ function NameGate({ onJoin }) {
       </p>
       <div className="flex flex-col gap-2 sm:flex-row">
         <input
-          className="input flex-1"
+          className="input min-w-0 flex-1"
           placeholder="Your name"
           value={name}
           onChange={(e) => setName(e.target.value)}
           maxLength={40}
           autoFocus
         />
-        <button type="submit" className="btn btn-primary" disabled={!name.trim()}>
+        <button type="submit" className="btn btn-primary w-full sm:w-auto" disabled={!name.trim()}>
           Start chatting
         </button>
       </div>
@@ -91,6 +91,7 @@ export default function SharedListView() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [chatName, setChatName] = useState(null);
+  const chatRef = useRef(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -111,6 +112,15 @@ export default function SharedListView() {
       cancelled = true;
     };
   }, [token]);
+
+  useEffect(() => {
+    if (!chatName || typeof window === 'undefined') return;
+    if (!window.matchMedia('(max-width: 1023px)').matches) return;
+
+    window.requestAnimationFrame(() => {
+      chatRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }, [chatName]);
 
   // Signed-in viewers chat under their account name with no extra prompt;
   // everyone else picks a display name via the gate. Derived during render so
@@ -162,14 +172,14 @@ export default function SharedListView() {
             Like what you see? Create your own MyKitchenList to track your fridge and
             get AI meal ideas.
           </div>
-          <Link to="/auth/sign-up" className="btn btn-primary btn-sm shrink-0">
+          <Link to="/auth/sign-up" className="btn btn-primary btn-sm w-full shrink-0 sm:w-auto">
             Create free account
           </Link>
         </div>
       )}
 
       <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
-        <div>
+        <div className="order-2 lg:order-none">
           {items.length === 0 ? (
             <div className="rounded-xl border border-dashed border-gray-200 bg-white p-8 text-center text-sm text-gray-500">
               This kitchen list is empty right now.
@@ -185,7 +195,12 @@ export default function SharedListView() {
           )}
         </div>
 
-        <div className="lg:sticky lg:top-20 lg:h-[34rem]">
+        <div
+          ref={chatRef}
+          className={`order-1 scroll-mt-20 lg:order-none lg:sticky lg:top-20 ${
+            activeChatName ? 'h-[70svh] min-h-[28rem] max-h-[34rem] lg:h-[34rem]' : ''
+          }`}
+        >
           {activeChatName ? (
             <ChatPanel
               token={token}

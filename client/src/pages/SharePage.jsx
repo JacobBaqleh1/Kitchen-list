@@ -1,12 +1,12 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { auth } from '../auth';
 import { apiFetch } from '../api';
 import { ChatPanel } from '../components/ChatPanel';
 
-function ShareRow({ share, onCopy, onRevoke, onOpenChat, active, copied }) {
+function ShareRow({ share, onCopy, onShare, onRevoke, onOpenChat, active, copied }) {
   return (
     <div
-      className={`rounded-xl border bg-white p-4 shadow-sm transition-colors ${
+      className={`overflow-hidden rounded-2xl border bg-white p-4 shadow-sm transition-colors sm:p-5 ${
         active ? 'border-green-500 ring-1 ring-green-500' : 'border-gray-200'
       }`}
     >
@@ -21,18 +21,25 @@ function ShareRow({ share, onCopy, onRevoke, onOpenChat, active, copied }) {
         </div>
       </div>
 
-      <div className="mt-3 flex items-center gap-2 rounded-lg bg-gray-50 px-2.5 py-1.5">
-        <span className="min-w-0 flex-1 truncate text-xs text-gray-500">{share.url}</span>
-        <button className="btn btn-secondary btn-sm shrink-0" onClick={() => onCopy(share)}>
-          {copied ? 'Copied!' : 'Copy link'}
-        </button>
+      <div className="mt-4 flex flex-col gap-2 rounded-xl bg-gray-50 p-3 sm:flex-row sm:items-center">
+        <span className="min-w-0 flex-1 break-all text-xs leading-relaxed text-gray-500 sm:truncate">
+          {share.url}
+        </span>
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:shrink-0">
+          <button className="btn btn-secondary btn-sm w-full" onClick={() => onCopy(share)}>
+            {copied ? 'Copied!' : 'Copy link'}
+          </button>
+          <button className="btn btn-primary btn-sm w-full" onClick={() => onShare(share)}>
+            Share
+          </button>
+        </div>
       </div>
 
-      <div className="mt-3 flex gap-2">
-        <button className="btn btn-primary btn-sm" onClick={() => onOpenChat(share)}>
+      <div className="mt-3 grid grid-cols-2 gap-2 sm:flex">
+        <button className="btn btn-secondary btn-sm w-full" onClick={() => onOpenChat(share)}>
           {active ? 'Chatting' : 'Open chat'}
         </button>
-        <button className="btn btn-danger btn-sm" onClick={() => onRevoke(share)}>
+        <button className="btn btn-danger btn-sm w-full" onClick={() => onRevoke(share)}>
           Revoke
         </button>
       </div>
@@ -53,6 +60,7 @@ export default function SharePage() {
   const [notice, setNotice] = useState('');
   const [copiedId, setCopiedId] = useState(null);
   const [activeShare, setActiveShare] = useState(null);
+  const chatRef = useRef(null);
 
   const load = useCallback(async () => {
     try {
@@ -69,6 +77,15 @@ export default function SharePage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (!activeShare || typeof window === 'undefined') return;
+    if (!window.matchMedia('(max-width: 1023px)').matches) return;
+
+    window.requestAnimationFrame(() => {
+      chatRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }, [activeShare]);
 
   const handleCreate = async (e) => {
     e.preventDefault();
@@ -108,6 +125,30 @@ export default function SharePage() {
     }
   };
 
+  const handleShare = async (share) => {
+    const shareData = {
+      title: 'MyKitchenList shared kitchen',
+      text: 'View this shared kitchen list on MyKitchenList.',
+      url: share.url,
+    };
+
+    try {
+      setError('');
+      if (navigator.share) {
+        await navigator.share(shareData);
+        return;
+      }
+
+      await navigator.clipboard.writeText(share.url);
+      setCopiedId(share.id);
+      setNotice('Link copied — paste it into any message or app to share.');
+      setTimeout(() => setCopiedId((id) => (id === share.id ? null : id)), 1500);
+    } catch (e) {
+      if (e?.name === 'AbortError') return;
+      setError('Could not open sharing — copy the link manually.');
+    }
+  };
+
   const handleRevoke = async (share) => {
     try {
       await apiFetch(`/api/shares/${share.id}`, { method: 'DELETE' });
@@ -120,15 +161,18 @@ export default function SharePage() {
 
   return (
     <div className="mx-auto max-w-225 px-3 pb-8 pt-4 sm:px-4 sm:pb-12 sm:pt-6">
-      <h1 className="mb-2 text-2xl font-bold text-gray-900">Share your list</h1>
-      <p className="mb-6 text-sm text-gray-500">
-        Invite someone to view your fridge, freezer, and pantry — read-only, like a
-        shared doc. They can open the link without an account and chat with you live.
-      </p>
+      <div className="mb-6 rounded-2xl bg-linear-to-br from-green-600 to-green-700 p-5 text-white shadow-md sm:p-6">
+        <div className="text-sm font-medium text-white/80">Share your kitchen</div>
+        <h1 className="mt-1 text-2xl font-bold tracking-tight">Share your list</h1>
+        <p className="mt-2 max-w-150 text-sm leading-6 text-white/85">
+          Invite someone to view your fridge, freezer, and pantry — read-only, like a
+          shared doc. They can open the link without an account and chat with you live.
+        </p>
+      </div>
 
       <form
         onSubmit={handleCreate}
-        className="mb-6 rounded-xl border border-gray-200 bg-white p-5 shadow-sm"
+        className="mb-6 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:p-5"
       >
         <label className="mb-1 block font-semibold text-gray-900">Invite by email</label>
         <p className="mb-3 text-sm text-gray-500">
@@ -138,13 +182,13 @@ export default function SharePage() {
         <div className="flex flex-col gap-2 sm:flex-row">
           <input
             type="email"
-            className="input flex-1"
+            className="input min-w-0 flex-1"
             placeholder="friend@example.com (optional)"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             disabled={creating}
           />
-          <button type="submit" className="btn btn-primary" disabled={creating}>
+          <button type="submit" className="btn btn-primary w-full sm:w-auto" disabled={creating}>
             {creating ? 'Creating…' : 'Create share'}
           </button>
         </div>
@@ -184,6 +228,7 @@ export default function SharePage() {
                   active={activeShare?.id === share.id}
                   copied={copiedId === share.id}
                   onCopy={handleCopy}
+                  onShare={handleShare}
                   onRevoke={handleRevoke}
                   onOpenChat={setActiveShare}
                 />
@@ -192,12 +237,15 @@ export default function SharePage() {
           )}
         </div>
 
-        <div>
+        <div
+          ref={chatRef}
+          className={activeShare ? 'order-first scroll-mt-20 lg:order-none' : ''}
+        >
           <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
             Chat
           </h2>
           {activeShare ? (
-            <div className="h-[32rem]">
+            <div className="h-[70svh] min-h-[28rem] max-h-[34rem] lg:h-[32rem]">
               <ChatPanel
                 key={activeShare.id}
                 token={activeShare.token}
