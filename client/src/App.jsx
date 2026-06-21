@@ -89,6 +89,76 @@ function ProtectedRoute({ children }) {
   );
 }
 
+function BrandMark({ className = '', light = false }) {
+  return (
+    <div className={`flex items-center gap-2.5 ${className}`}>
+      <span
+        className={`flex size-9 items-center justify-center rounded-xl ${
+          light ? 'bg-white/15 ring-1 ring-white/25 backdrop-blur-sm' : 'bg-green-50 ring-1 ring-green-100'
+        }`}
+      >
+        <img src="/favicon.svg" alt="" className="size-6" />
+      </span>
+      <span className={`text-lg font-bold tracking-tight ${light ? 'text-white' : 'text-green-600'}`}>
+        MyKitchenList
+      </span>
+    </div>
+  );
+}
+
+function FeatureItem({ children }) {
+  return (
+    <li className="flex items-center gap-3 text-[15px] text-white/90">
+      <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-white/15 ring-1 ring-white/25">
+        <svg viewBox="0 0 20 20" fill="none" className="size-3.5 text-white" aria-hidden="true">
+          <path
+            d="M4 10.5 8 14.5 16 5.5"
+            stroke="currentColor"
+            strokeWidth="2.25"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </span>
+      {children}
+    </li>
+  );
+}
+
+function AuthArtPanel() {
+  return (
+    <section className="relative hidden overflow-hidden lg:block">
+      <img
+        src="/auth-hero.png"
+        alt="A bright kitchen counter with fresh produce, herbs, and pantry jars"
+        className="absolute inset-0 size-full object-cover"
+      />
+      <div className="absolute inset-0 bg-linear-to-t from-black/85 via-black/40 to-black/15" />
+      <div className="absolute inset-0 bg-linear-to-br from-green-900/45 via-transparent to-transparent" />
+      <div className="relative flex h-full flex-col justify-between p-10 xl:p-14">
+        <BrandMark light />
+        <div className="max-w-md">
+          <h1 className="text-4xl font-bold leading-[1.1] tracking-tight text-white xl:text-5xl">
+            Your kitchen,
+            <br />
+            perfectly organized.
+          </h1>
+          <p className="mt-5 text-base leading-relaxed text-white/80">
+            Keep track of what&apos;s in your fridge, freezer, and pantry — get AI meal ideas, and
+            share lists with the people you cook with.
+          </p>
+          <ul className="mt-8 space-y-3.5">
+            <FeatureItem>Track your fridge, freezer &amp; pantry</FeatureItem>
+            <FeatureItem>AI meal ideas from what you already have</FeatureItem>
+            <FeatureItem>Share lists &amp; chat in real time</FeatureItem>
+          </ul>
+        </div>
+        <p className="text-xs text-white/45">Fresh ideas for whatever&apos;s in your kitchen.</p>
+      </div>
+    </section>
+  );
+}
+
 function AuthPage() {
   const location = useLocation();
   const path = location.pathname.replace('/auth/', '');
@@ -99,17 +169,44 @@ function AuthPage() {
     return <Navigate to="/" replace />;
   }
 
-  if (!isSignOut && isPending) {
+  // Sign-out is a brief processing/redirect view — keep it minimal, no chrome.
+  if (isSignOut) {
     return (
-      <div className="flex justify-center px-4 py-12 text-gray-500">
+      <div className="flex min-h-screen items-center justify-center px-4">
+        <AuthView path={path} />
+      </div>
+    );
+  }
+
+  if (isPending) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-white">
         <div className="spinner size-8" />
       </div>
     );
   }
 
   return (
-    <div className="flex justify-center px-4 py-12">
-      <AuthView path={path} />
+    <div className="grid min-h-screen lg:grid-cols-[1.05fr_1fr]">
+      <AuthArtPanel />
+      <section className="flex flex-col bg-gray-50">
+        {/* Compact branded hero for small screens (art panel is hidden there). */}
+        <div className="relative h-44 overflow-hidden lg:hidden">
+          <img src="/auth-hero.png" alt="" className="absolute inset-0 size-full object-cover" />
+          <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/45 to-black/20" />
+          <div className="relative flex h-full flex-col justify-end gap-2 p-6">
+            <BrandMark light />
+            <p className="text-sm text-white/85">Your kitchen, perfectly organized.</p>
+          </div>
+        </div>
+
+        <div className="flex flex-1 items-center justify-center px-5 py-10 sm:px-8">
+          <div className="w-full max-w-md">
+            <BrandMark className="mb-8 hidden lg:flex" />
+            <AuthView path={path} />
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

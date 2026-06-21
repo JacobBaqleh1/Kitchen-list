@@ -7,6 +7,15 @@
 @import '@neondatabase/auth-ui/css' layer(neon-auth);
 @import "tailwindcss";
 
+/* Brand the Neon auth-ui widget with the MyKitchenList green. The widget reads
+   a consumer-provided --primary (falling back to near-black), so defining these
+   here themes its primary button, links, and focus rings to match the app. */
+:root {
+  --primary: oklch(0.627 0.176 149.6); /* ~ green-600 #16a34a */
+  --primary-foreground: oklch(0.985 0 0);
+  --ring: oklch(0.627 0.176 149.6);
+}
+
 @layer base {
   html,
   body {
