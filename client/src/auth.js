@@ -30,6 +30,7 @@ export const auth = createAuthClient(import.meta.env.VITE_NEON_AUTH_URL, {
           // ever clears the flag) and lock the user out.
           clearExplicitSignOut();
           persistIOSStandaloneSession({ session: data.session, user: data.user });
+          markPersistedValidationValid(data.session.token);
           notifyPersistedSession();
         }
       } catch {
@@ -84,7 +85,14 @@ function hasUsableSession(sessionData) {
   return Number.isFinite(expiresAtMs) && expiresAtMs > Date.now() + EXPIRY_SKEW_MS;
 }
 
+// In-memory mirror of the persisted session. Some iOS standalone PWAs (notably
+// ones added from a Private tab) can fail to persist localStorage across the
+// post-login navigation, so we also keep the just-captured session here as a
+// fallback for the lifetime of the running app session.
+let inMemorySession = null;
+
 export function clearPersistedIOSStandaloneSession() {
+  inMemorySession = null;
   if (typeof window === 'undefined') return;
   window.localStorage.removeItem(IOS_STANDALONE_SESSION_KEY);
 }
@@ -117,7 +125,22 @@ export function persistIOSStandaloneSession(sessionData) {
     return;
   }
 
-  window.localStorage.setItem(IOS_STANDALONE_SESSION_KEY, JSON.stringify(sessionData));
+  inMemorySession = sessionData;
+  try {
+    window.localStorage.setItem(IOS_STANDALONE_SESSION_KEY, JSON.stringify(sessionData));
+  } catch {
+    // localStorage may be unavailable/ephemeral in some standalone contexts;
+    // the in-memory mirror still keeps the user signed in for this session.
+  }
+}
+
+// Effective stored session: localStorage first, falling back to the in-memory
+// mirror when storage didn't persist (e.g. a Private-tab-added PWA).
+function getStoredSession() {
+  const persisted = readPersistedIOSStandaloneSession();
+  if (persisted) return persisted;
+  if (isIOSStandalone() && hasUsableSession(inMemorySession)) return inMemorySession;
+  return null;
 }
 
 // Server-confirmed status of the persisted token. A stored token is only ever
@@ -235,6 +258,17 @@ async function validatePersistedSession(token) {
   notifyValidation();
 }
 
+// Mark a freshly issued token (just returned by the auth server on login/
+// sign-up/refresh) as valid without a server round-trip — it was authenticated
+// moments ago. The round-trip in validatePersistedSession is reserved for
+// sessions restored from storage on a cold launch (the shared-device case).
+function markPersistedValidationValid(token) {
+  if (!token) return;
+  persistedValidation.token = token;
+  persistedValidation.status = 'valid';
+  notifyValidation();
+}
+
 let lastLiveToken = null;
 
 // Explicit, app-driven sign-out. We can't wrap auth.signOut (the better-auth
@@ -307,7 +341,7 @@ export function usePersistentSession() {
     // the cookie, or someone else opened the installed app), ask the server to
     // confirm it before we ever render as signed in.
     if (liveIsPending) return;
-    const token = readPersistedIOSStandaloneSession()?.session?.token;
+    const token = getStoredSession()?.session?.token;
     if (token) validatePersistedSession(token);
   }, [liveSessionData, liveIsUsable, liveIsPending]);
 
@@ -332,7 +366,7 @@ export function usePersistentSession() {
     return { ...liveSession, refetch };
   }
 
-  const persistedSession = readPersistedIOSStandaloneSession();
+  const persistedSession = getStoredSession();
   if (!persistedSession) {
     return { ...liveSession, refetch };
   }
