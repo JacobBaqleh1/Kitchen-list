@@ -12,6 +12,8 @@ import { prefetchItems } from './lib/itemsCache';
 import FridgeView from './pages/FridgeView';
 import MealSuggest from './pages/MealSuggest';
 import Settings from './pages/Settings';
+import SharePage from './pages/SharePage';
+import SharedListView from './pages/SharedListView';
 
 const navLinkBase =
   'flex-1 sm:flex-initial text-center sm:text-left rounded-md px-2 sm:px-3 py-1.5 text-sm font-medium no-underline cursor-pointer select-none transition-colors';
@@ -34,6 +36,7 @@ function Nav() {
           <div className="order-3 flex w-full justify-between gap-1 sm:order-0 sm:w-auto sm:justify-start">
             <NavLink to="/" end className={navLinkClass}>Fridge &amp; Pantry</NavLink>
             <NavLink to="/meal" className={navLinkClass}>Meal Ideas</NavLink>
+            <NavLink to="/share" className={navLinkClass}>Share</NavLink>
             <NavLink to="/settings" className={navLinkClass}>Settings</NavLink>
           </div>
           <div className="ml-auto">
@@ -104,8 +107,10 @@ function AppWithAuth() {
       <Nav />
       <Routes>
         <Route path="/auth/*" element={<AuthPage />} />
+        <Route path="/s/:token" element={<SharedListView />} />
         <Route path="/" element={<ProtectedRoute><FridgeView /></ProtectedRoute>} />
         <Route path="/meal" element={<ProtectedRoute><MealSuggest /></ProtectedRoute>} />
+        <Route path="/share" element={<ProtectedRoute><SharePage /></ProtectedRoute>} />
         <Route path="/preferences" element={<Navigate to="/settings" replace />} />
         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
       </Routes>

@@ -12,3 +12,9 @@ services:
         sync: false
       - key: ANTHROPIC_API_KEY
         sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: SHARE_EMAIL_FROM
+        sync: false
+      - key: APP_BASE_URL
+        sync: false
