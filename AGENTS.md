@@ -14,17 +14,36 @@ Standard scripts live in each `package.json` (`npm run dev`, `client` has
 
 ## Cursor Cloud specific instructions
 
-### External-service dependencies (what does / doesn't run locally)
-This app is built around managed cloud services. Without real secrets you can
-still run both apps and exercise the full data layer, but these need real
-credentials to function:
-- **Neon Auth** (`VITE_NEON_AUTH_URL`, `NEON_AUTH_JWKS_URL`) — hosted sign-in.
-  Without it the client renders the sign-in page but cannot complete login.
-- **AWS Bedrock** (`AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`/`AWS_REGION`) —
-  required only for `/api/meal/suggest` and `/api/photos/scan`.
-- **Box** (`BOX_*`) — required only for `/api/photos/scan` uploads.
+### Running against the real managed services (primary path)
+This app is built around managed cloud services. When the real secrets are
+present (set them in the Secrets panel so they're injected as env vars, or in
+`server/.env` + `client/.env` — both are gitignored), just run each app's
+`npm run dev` directly; no Docker/local proxy is needed:
 
-### Local Postgres for the serverless driver (no cloud DB needed)
+```
+cd server && npm run dev    # API on :3001, talks to real Neon cloud
+cd client && npm run dev    # Vite on :5173
+```
+
+`GET http://localhost:3001/health` → `{"status":"ok"}` confirms the real Neon DB
+connection. The full flow has been verified end-to-end: Neon Auth sign-up/login,
+adding fridge items (persisted to Neon), and AI meal suggestions via AWS Bedrock
+(Amazon Nova).
+
+Required env vars (see `server/.env.example` / `client/.env.example`):
+- **Neon DB**: `DATABASE_URL` (server). The `@neondatabase/serverless` driver
+  talks to Neon's SQL-over-HTTP endpoint directly — no local DB needed.
+- **Neon Auth**: `NEON_AUTH_JWKS_URL` (server), `VITE_NEON_AUTH_URL` (client).
+- **AWS Bedrock**: `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` / `AWS_REGION`
+  — only for `/api/meal/suggest` and `/api/photos/scan`.
+- **Box**: `BOX_*` — only for `/api/photos/scan` uploads. The `BOX_PRIVATE_KEY`
+  value keeps literal `\n` sequences in `.env`; the app converts them at runtime.
+
+Note: `npm run db:push` against the live Neon DB is destructive-ish (alters the
+shared schema). The production schema already exists, so avoid running it unless
+you intend to change the schema.
+
+### Fallback: local Postgres when no Neon DB secret is available
 The server's `db.js` calls `neon(DATABASE_URL)` (Neon SQL-over-HTTP/WebSocket),
 so a plain local Postgres is not directly reachable. Run the bundled proxy:
 
