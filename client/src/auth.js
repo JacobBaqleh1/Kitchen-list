@@ -218,7 +218,11 @@ export function usePersistentSession() {
 
   useEffect(() => {
     if (!explicitSignOut.active || !liveToken) return;
-    if (explicitSignOut.token && liveToken !== explicitSignOut.token) {
+    // A fresh live token means a new sign-in completed, so lift the post-logout
+    // suppression. Also clear when no token was captured at logout time (e.g. an
+    // iOS session restored from storage had no live token), otherwise the flag
+    // would stay stuck and lock the user out of a valid new session.
+    if (!explicitSignOut.token || liveToken !== explicitSignOut.token) {
       clearExplicitSignOut();
     }
   }, [liveToken]);
