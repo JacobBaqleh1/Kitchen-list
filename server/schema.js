@@ -43,3 +43,33 @@ export const preferences = pgTable('preferences', {
   allergies: text('allergies').array().default(sql`'{}'::text[]`),
   dislikes: text('dislikes').array().default(sql`'{}'::text[]`),
 });
+
+// A read-only, link-based share of an owner's kitchen list (Google-Doc style).
+// `token` is the unguessable secret embedded in the share URL — anyone holding
+// it can view the list and chat, no account required. Revoking flips `status`.
+export const shares = pgTable('shares', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  token: text('token').notNull().unique(),
+  ownerId: text('owner_id').notNull(),
+  ownerName: text('owner_name'),
+  invitedEmail: text('invited_email'),
+  status: text('status').notNull().default('active'), // 'active' | 'revoked'
+  createdAt: timestamp('created_at').defaultNow(),
+}, (t) => [
+  index('shares_owner_idx').on(t.ownerId),
+]);
+
+// Chat messages exchanged on a share. Persisted so history survives reconnects;
+// live delivery happens over WebSockets (see ws/shareChat.js). A guest viewer
+// has no account so senderUserId is null and senderName is their chosen handle.
+export const shareMessages = pgTable('share_messages', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  shareId: uuid('share_id').notNull(),
+  senderRole: text('sender_role').notNull(), // 'owner' | 'guest'
+  senderName: text('sender_name').notNull(),
+  senderUserId: text('sender_user_id'),
+  body: text('body').notNull(),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (t) => [
+  index('share_messages_share_created_idx').on(t.shareId, t.createdAt),
+]);

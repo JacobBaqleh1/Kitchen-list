@@ -49,3 +49,23 @@ export async function apiFetch(path, options = {}) {
   }
   return res.json();
 }
+
+// Unauthenticated fetch for token-gated public endpoints (shared list views).
+// These work for visitors with no MyKitchenList account, so we never attach a
+// bearer token.
+export async function apiFetchPublic(path, options = {}) {
+  const res = await fetch(`${BASE}${path}`, {
+    headers: { 'Content-Type': 'application/json', ...options.headers },
+    ...options,
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(body.error || `Request failed: ${res.status}`);
+  }
+  return res.json();
+}
+
+// WebSocket origin derived from the HTTP API base (http->ws, https->wss).
+export function wsBase() {
+  return BASE.replace(/^http/, 'ws');
+}
