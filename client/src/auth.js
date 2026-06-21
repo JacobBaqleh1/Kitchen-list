@@ -10,6 +10,12 @@ const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 const IOS_STANDALONE_SESSION_KEY = 'mykitchenlist.iosStandaloneSession';
 const EXPIRY_SKEW_MS = 30_000;
 
+const explicitSignOut = {
+  active: false,
+  token: null,
+  listeners: new Set(),
+};
+
 function isIOSDevice() {
   if (typeof window === 'undefined') return false;
 
@@ -105,6 +111,39 @@ function getValidationStatus() {
   return persistedValidation.status;
 }
 
+function notifyExplicitSignOut() {
+  for (const listener of explicitSignOut.listeners) listener();
+}
+
+function subscribeExplicitSignOut(listener) {
+  explicitSignOut.listeners.add(listener);
+  return () => explicitSignOut.listeners.delete(listener);
+}
+
+function getExplicitSignOutSnapshot() {
+  return `${explicitSignOut.active ? '1' : '0'}:${explicitSignOut.token ?? ''}`;
+}
+
+function beginExplicitSignOut() {
+  explicitSignOut.active = true;
+  explicitSignOut.token = lastLiveToken;
+  clearPersistedIOSStandaloneSession();
+  resetPersistedValidation();
+  notifyExplicitSignOut();
+}
+
+function finishExplicitSignOut() {
+  clearPersistedIOSStandaloneSession();
+  resetPersistedValidation();
+}
+
+function clearExplicitSignOut() {
+  if (!explicitSignOut.active) return;
+  explicitSignOut.active = false;
+  explicitSignOut.token = null;
+  notifyExplicitSignOut();
+}
+
 function resetPersistedValidation() {
   if (persistedValidation.status === 'idle' && persistedValidation.token === null) return;
   persistedValidation.status = 'idle';
@@ -145,12 +184,14 @@ async function validatePersistedSession(token) {
 }
 
 const originalSignOut = auth.signOut.bind(auth);
+let lastLiveToken = null;
+
 auth.signOut = async (...args) => {
+  beginExplicitSignOut();
   try {
     return await originalSignOut(...args);
   } finally {
-    clearPersistedIOSStandaloneSession();
-    resetPersistedValidation();
+    finishExplicitSignOut();
   }
 };
 
@@ -162,11 +203,29 @@ export function usePersistentSession() {
     getValidationStatus,
     () => 'idle',
   );
+  useSyncExternalStore(
+    subscribeExplicitSignOut,
+    getExplicitSignOutSnapshot,
+    () => '0:',
+  );
 
   const liveIsUsable = hasUsableSession(liveSessionData);
+  const liveToken = liveSessionData?.session?.token ?? null;
+  lastLiveToken = liveToken;
+
+  useEffect(() => {
+    if (!explicitSignOut.active || !liveToken) return;
+    if (explicitSignOut.token && liveToken !== explicitSignOut.token) {
+      clearExplicitSignOut();
+    }
+  }, [liveToken]);
 
   useEffect(() => {
     if (!isIOSStandalone()) return;
+    if (explicitSignOut.active) {
+      clearPersistedIOSStandaloneSession();
+      return;
+    }
 
     // A live session is the source of truth: persist it and drop any stale
     // validation state from a previously restored session.
@@ -190,6 +249,10 @@ export function usePersistentSession() {
     },
     [liveRefetch],
   );
+
+  if (explicitSignOut.active) {
+    return { ...liveSession, data: null, isPending: false, refetch };
+  }
 
   // A real live session always wins.
   if (liveIsUsable) {

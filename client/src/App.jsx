@@ -32,19 +32,31 @@ function Nav() {
         >
           MyKitchenList
         </Link>
-        <SignedIn>
-          <div className="order-3 flex w-full justify-between gap-1 sm:order-0 sm:w-auto sm:justify-start">
-            <NavLink to="/" end className={navLinkClass}>Fridge &amp; Pantry</NavLink>
-            <NavLink to="/meal" className={navLinkClass}>Meal Ideas</NavLink>
-            <NavLink to="/share" className={navLinkClass}>Share</NavLink>
-            <NavLink to="/settings" className={navLinkClass}>Settings</NavLink>
-          </div>
-          <div className="ml-auto">
-            <UserButton disableDefaultLinks />
-          </div>
-        </SignedIn>
+        <div className="order-3 flex w-full justify-between gap-1 sm:order-0 sm:w-auto sm:justify-start">
+          <NavLink to="/" end className={navLinkClass}>Fridge &amp; Pantry</NavLink>
+          <NavLink to="/meal" className={navLinkClass}>Meal Ideas</NavLink>
+          <NavLink to="/share" className={navLinkClass}>Share</NavLink>
+          <NavLink to="/settings" className={navLinkClass}>Settings</NavLink>
+        </div>
+        <div className="ml-auto">
+          <UserButton disableDefaultLinks />
+        </div>
       </div>
     </nav>
+  );
+}
+
+function AppChrome() {
+  const location = useLocation();
+  const isAuthRoute =
+    location.pathname === '/auth' || location.pathname.startsWith('/auth/');
+
+  if (isAuthRoute) return null;
+
+  return (
+    <SignedIn>
+      <Nav />
+    </SignedIn>
   );
 }
 
@@ -80,6 +92,21 @@ function ProtectedRoute({ children }) {
 function AuthPage() {
   const location = useLocation();
   const path = location.pathname.replace('/auth/', '');
+  const { data, isPending } = usePersistentSession();
+  const isSignOut = path === 'sign-out';
+
+  if (!isSignOut && data?.user) {
+    return <Navigate to="/" replace />;
+  }
+
+  if (!isSignOut && isPending) {
+    return (
+      <div className="flex justify-center px-4 py-12 text-gray-500">
+        <div className="spinner size-8" />
+      </div>
+    );
+  }
+
   return (
     <div className="flex justify-center px-4 py-12">
       <AuthView path={path} />
@@ -107,7 +134,7 @@ function AppWithAuth() {
       localization={{ SIGN_IN_WITH: 'Continue with' }}
     >
       <SessionTokenSync />
-      <Nav />
+      <AppChrome />
       <Routes>
         <Route path="/auth/*" element={<AuthPage />} />
         <Route path="/s/:token" element={<SharedListView />} />
