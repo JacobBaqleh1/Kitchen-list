@@ -4,6 +4,7 @@ KitchenList is a smart fridge/pantry tracker with AI meal suggestions. See
 `README.md` for the product overview and the canonical run commands.
 
 - `client/` — React 19 + Vite + Tailwind SPA (port 5173). Auth UI via Neon Auth.
+- `mobile/` — Expo SDK 56 + Expo Router native app (iOS/Android). Same API and Neon Auth as the web client.
 - `server/` — Node/Express API (port 3001). Drizzle ORM over the
   `@neondatabase/serverless` driver; AI via AWS Bedrock (Amazon Nova); photo
   storage via Box.
@@ -85,3 +86,10 @@ restart the server, then:
 (`npm run lint`) currently reports pre-existing `react-hooks/set-state-in-effect`
 errors in `AddItemForm.jsx`/`FridgeView.jsx` (eslint-plugin-react-hooks v7) —
 these are existing code issues, not environment problems.
+
+### Mobile (Expo)
+`cd mobile && npm start` — scan the QR code with Expo Go on a device, or press
+`i`/`a` for the simulator. Copy `mobile/.env.example` to `mobile/.env` and set
+`EXPO_PUBLIC_API_URL` (use your machine's LAN IP on a physical device, not
+`localhost`) and `EXPO_PUBLIC_NEON_AUTH_URL` (same value as `VITE_NEON_AUTH_URL`
+on the web client). The app talks to the same Express API on :3001.

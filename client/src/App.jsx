@@ -14,6 +14,7 @@ import MealSuggest from './pages/MealSuggest';
 import Settings from './pages/Settings';
 import SharePage from './pages/SharePage';
 import SharedListView from './pages/SharedListView';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 
 const navLinkBase =
   'flex-1 sm:flex-initial text-center sm:text-left rounded-md px-2 sm:px-3 py-1.5 text-sm font-medium no-underline cursor-pointer select-none transition-colors';
@@ -50,8 +51,9 @@ function AppChrome() {
   const location = useLocation();
   const isAuthRoute =
     location.pathname === '/auth' || location.pathname.startsWith('/auth/');
+  const isPublicRoute = location.pathname === '/privacy';
 
-  if (isAuthRoute) return null;
+  if (isAuthRoute || isPublicRoute) return null;
 
   return (
     <SignedIn>
@@ -231,6 +233,11 @@ function AuthPage() {
               </div>
             )}
             <AuthView path={path} />
+            <p className="mt-6 text-center text-xs text-gray-500">
+              <Link to="/privacy" className="text-gray-500 no-underline hover:text-green-600">
+                Privacy Policy
+              </Link>
+            </p>
           </div>
         </div>
       </section>
@@ -261,6 +268,7 @@ function AppWithAuth() {
       <AppChrome />
       <Routes>
         <Route path="/auth/*" element={<AuthPage />} />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/s/:token" element={<SharedListView />} />
         <Route path="/" element={<ProtectedRoute><FridgeView /></ProtectedRoute>} />
         <Route path="/meal" element={<ProtectedRoute><MealSuggest /></ProtectedRoute>} />

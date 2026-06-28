@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { apiFetch } from '../api';
 import { clearMealCache, loadItemSort, saveItemSort } from '../lib/appSettings';
 
@@ -203,6 +204,12 @@ export default function Settings() {
         <p className="text-sm text-gray-500">
           Track what&apos;s in your fridge, freezer, and pantry, then get AI meal ideas based on what you have on hand.
         </p>
+        <Link
+          to="/privacy"
+          className="mt-3 inline-block text-sm font-semibold text-green-600 no-underline hover:text-green-700"
+        >
+          Privacy Policy
+        </Link>
       </div>
 
       <div className="mt-4 h-5">

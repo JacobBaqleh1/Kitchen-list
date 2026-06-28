@@ -8,7 +8,7 @@ import { sendShareInvite } from '../lib/email.js';
 
 const router = Router();
 
-const APP_BASE_URL = process.env.APP_BASE_URL || 'https://mykitchenlist.vercel.app';
+const APP_BASE_URL = process.env.APP_BASE_URL || 'https://mykitchenlist.app';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 function shareUrl(token) {
@@ -76,7 +76,7 @@ router.use(requireAuth);
 router.get('/', async (req, res) => {
   try {
     const rows = await db.select().from(shares)
-      .where(eq(shares.ownerId, req.user.id))
+      .where(and(eq(shares.ownerId, req.user.id), eq(shares.status, 'active')))
       .orderBy(asc(shares.createdAt));
     res.json(rows.map(ownerShareView));
   } catch (e) {

@@ -65,7 +65,7 @@ export default function SharePage() {
   const load = useCallback(async () => {
     try {
       const data = await apiFetch('/api/shares');
-      setShares(data);
+      setShares(data.filter((s) => s.status !== 'revoked'));
       setError('');
     } catch (e) {
       setError(e.message);

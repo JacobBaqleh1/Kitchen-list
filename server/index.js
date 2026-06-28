@@ -20,6 +20,8 @@ const PORT = process.env.PORT || 3001;
 app.set('trust proxy', 1);
 
 const allowedOrigins = [
+  'https://mykitchenlist.app',
+  'https://www.mykitchenlist.app',
   'https://mykitchenlist.vercel.app',
   'http://localhost:5173',
   'http://localhost:5174',

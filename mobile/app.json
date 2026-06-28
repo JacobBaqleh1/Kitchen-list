@@ -1,0 +1,59 @@
+{
+  "expo": {
+    "name": "MyKitchenList",
+    "slug": "mykitchenlist",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "mykitchenlist",
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.mykitchenlist.app",
+      "config": {
+        "usesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "com.mykitchenlist.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "backgroundImage": "./assets/images/android-icon-background.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "android.permission.RECORD_AUDIO"
+      ]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow MyKitchenList to scan photos of your groceries and receipts.",
+          "cameraPermission": "Allow MyKitchenList to take photos of your groceries and receipts."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    },
+    "extra": {
+      "apiUrl": "https://kitchen-list.onrender.com",
+      "neonAuthUrl": "https://ep-plain-star-a6cv8b1b.neonauth.us-west-2.aws.neon.tech/neondb/auth",
+      "router": {},
+      "eas": {
+        "projectId": "2951500a-12ae-463a-868b-1424139cd6e3"
+      }
+    },
+    "owner": "jacobbaqleh"
+  }
+}
