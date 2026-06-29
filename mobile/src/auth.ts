@@ -5,6 +5,8 @@ import { BetterAuthReactAdapter } from '@neondatabase/auth/react/adapters';
 import { API_URL, NEON_AUTH_URL } from './config';
 
 const SESSION_KEY = 'mykitchenlist.session';
+const SIGNED_OUT_TOKEN_KEY = 'mykitchenlist.signedOutToken';
+const SIGNED_OUT_KEY = 'mykitchenlist.signedOut';
 const EXPIRY_SKEW_MS = 30_000;
 
 export type SessionData = {
@@ -25,10 +27,13 @@ export const auth = createAuthClient(NEON_AUTH_URL, {
     onSuccess: (ctx: { data?: { session?: { token?: string; expiresAt?: string }; user?: unknown } }) => {
       try {
         const data = ctx?.data;
-        if (data?.session?.token && data?.user) {
+        const token = data?.session?.token;
+        if (token && data?.user) {
+          if (shouldIgnoreAuthSession(token)) return;
+          void clearSignedOutState();
           clearExplicitSignOut();
           persistSession({ session: data.session, user: data.user });
-          markPersistedValidationValid(data.session.token);
+          markPersistedValidationValid(token);
           notifyPersistedSession();
         }
         clearAuthError();
@@ -94,6 +99,66 @@ function hasUsableSession(sessionData: unknown) {
 }
 
 let inMemorySession: { session: unknown; user: unknown } | null = null;
+let signedOutTokenCache: string | null | undefined;
+let signedOutFlagCache: boolean | undefined;
+
+function shouldIgnoreAuthSession(token: string) {
+  if (explicitSignOut.active) {
+    if (!explicitSignOut.token || explicitSignOut.token === token) return true;
+  }
+  if (signedOutFlagCache === true) {
+    if (!signedOutTokenCache || signedOutTokenCache === token) return true;
+  }
+  return false;
+}
+
+async function readSignedOutState() {
+  if (signedOutTokenCache === undefined) {
+    try {
+      signedOutTokenCache = (await SecureStore.getItemAsync(SIGNED_OUT_TOKEN_KEY)) ?? null;
+    } catch {
+      signedOutTokenCache = null;
+    }
+  }
+  if (signedOutFlagCache === undefined) {
+    try {
+      signedOutFlagCache = (await SecureStore.getItemAsync(SIGNED_OUT_KEY)) === '1';
+    } catch {
+      signedOutFlagCache = false;
+    }
+  }
+  return { signedOutToken: signedOutTokenCache, signedOut: signedOutFlagCache };
+}
+
+async function persistSignedOutState(token: string | null) {
+  signedOutTokenCache = token;
+  signedOutFlagCache = true;
+  try {
+    if (token) {
+      await SecureStore.setItemAsync(SIGNED_OUT_TOKEN_KEY, token);
+    } else {
+      await SecureStore.deleteItemAsync(SIGNED_OUT_TOKEN_KEY);
+    }
+    await SecureStore.setItemAsync(SIGNED_OUT_KEY, '1');
+  } catch {
+    /* in-memory fallback */
+  }
+}
+
+async function clearSignedOutState() {
+  signedOutTokenCache = null;
+  signedOutFlagCache = false;
+  try {
+    await SecureStore.deleteItemAsync(SIGNED_OUT_TOKEN_KEY);
+    await SecureStore.deleteItemAsync(SIGNED_OUT_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+function isSignedOutStateLoaded() {
+  return signedOutTokenCache !== undefined && signedOutFlagCache !== undefined;
+}
 
 export async function clearPersistedSession() {
   inMemorySession = null;
@@ -105,12 +170,29 @@ export async function clearPersistedSession() {
 }
 
 export async function readPersistedSession() {
-  if (inMemorySession && hasUsableSession(inMemorySession)) return inMemorySession;
+  await readSignedOutState();
+  if (signedOutFlagCache && !signedOutTokenCache) {
+    await clearPersistedSession();
+    return null;
+  }
+  if (inMemorySession && hasUsableSession(inMemorySession)) {
+    const token = (inMemorySession as { session?: { token?: string } }).session?.token ?? null;
+    if (token && signedOutTokenCache === token) {
+      await clearPersistedSession();
+      return null;
+    }
+    return inMemorySession;
+  }
   try {
     const raw = await SecureStore.getItemAsync(SESSION_KEY);
     if (!raw) return null;
     const sessionData = JSON.parse(raw);
     if (!hasUsableSession(sessionData)) {
+      await clearPersistedSession();
+      return null;
+    }
+    const token = sessionData?.session?.token ?? null;
+    if (signedOutFlagCache && (!token || signedOutTokenCache === token)) {
       await clearPersistedSession();
       return null;
     }
@@ -127,6 +209,8 @@ export async function persistSession(sessionData: { session: unknown; user: unkn
     await clearPersistedSession();
     return;
   }
+  const token = (sessionData as { session?: { token?: string } }).session?.token ?? null;
+  if (token && shouldIgnoreAuthSession(token)) return;
   inMemorySession = sessionData;
   try {
     await SecureStore.setItemAsync(SESSION_KEY, JSON.stringify(sessionData));
@@ -191,7 +275,13 @@ function getExplicitSignOutSnapshot() {
 
 function beginExplicitSignOut() {
   explicitSignOut.active = true;
-  explicitSignOut.token = lastLiveToken;
+  const token =
+    lastLiveToken ??
+    (inMemorySession as { session?: { token?: string } } | null)?.session?.token ??
+    (storedSessionCache as { session?: { token?: string } } | null | undefined)?.session?.token ??
+    null;
+  explicitSignOut.token = token;
+  void persistSignedOutState(token);
   void clearPersistedSession();
   resetPersistedValidation();
   notifyExplicitSignOut();
@@ -218,6 +308,16 @@ function resetPersistedValidation() {
 
 async function validatePersistedSession(token: string) {
   if (!token) return;
+  await readSignedOutState();
+  if (shouldIgnoreAuthSession(token)) {
+    if (persistedValidation.token !== token) {
+      persistedValidation.token = token;
+      persistedValidation.status = 'rejected';
+      notifyValidation();
+    }
+    void clearPersistedSession();
+    return;
+  }
   if (persistedValidation.token === token && persistedValidation.status !== 'idle') return;
 
   persistedValidation.token = token;
@@ -273,6 +373,7 @@ export function clientSignOut() {
 
 export function usePersistentSession() {
   const [storedSession, setStoredSession] = useState<SessionData>(null);
+  const [signedOutStateReady, setSignedOutStateReady] = useState(false);
 
   const liveSession = auth.useSession();
   const liveSessionData = liveSession.data as SessionData;
@@ -304,6 +405,10 @@ export function usePersistentSession() {
   }, [liveToken]);
 
   useEffect(() => {
+    void readSignedOutState().then(() => setSignedOutStateReady(true));
+  }, []);
+
+  useEffect(() => {
     void getStoredSession().then((stored) => setStoredSession(stored));
   }, [persistedVersion]);
 
@@ -313,7 +418,14 @@ export function usePersistentSession() {
       setStoredSession(null);
       return;
     }
+    if (!isSignedOutStateLoaded()) return;
+    if (signedOutFlagCache && liveToken && signedOutTokenCache === liveToken) {
+      return;
+    }
     if (liveIsUsable && liveSessionData) {
+      const token = liveToken;
+      if (token && shouldIgnoreAuthSession(token)) return;
+      void clearSignedOutState();
       void persistSession(liveSessionData as { session: unknown; user: unknown });
       setStoredSession(liveSessionData);
       resetPersistedValidation();
@@ -322,7 +434,7 @@ export function usePersistentSession() {
     }
     const token = storedSession?.session?.token;
     if (token) validatePersistedSession(token);
-  }, [liveSessionData, liveIsUsable, liveIsPending, persistedVersion, storedSession?.session?.token]);
+  }, [liveSessionData, liveIsUsable, liveIsPending, liveToken, persistedVersion, storedSession?.session?.token]);
 
   const refetch = useCallback(
     async (...args: unknown[]) => liveRefetch?.(...(args as [])),
@@ -331,15 +443,26 @@ export function usePersistentSession() {
 
   const base = { isPending: liveIsPending, refetch };
 
+  if (!signedOutStateReady && (liveIsUsable || storedSession)) {
+    return { ...base, data: null, isPending: true };
+  }
+
   if (explicitSignOut.active) {
     return { ...base, data: null, isPending: false };
   }
 
   if (liveIsUsable) {
+    if (liveToken && shouldIgnoreAuthSession(liveToken)) {
+      return { ...base, data: null, isPending: false };
+    }
     return { ...base, data: liveSessionData };
   }
 
   if (storedSession && validationStatus === 'valid') {
+    const token = storedSession?.session?.token;
+    if (token && shouldIgnoreAuthSession(token)) {
+      return { ...base, data: null, isPending: false };
+    }
     return { ...base, data: storedSession, isPending: false };
   }
 
