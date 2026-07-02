@@ -50,6 +50,7 @@ export default function MealScreen() {
   const [kitchenItems, setKitchenItems] = useState<KitchenItem[]>([]);
   const [includedItemIds, setIncludedItemIds] = useState<number[]>([]);
   const [excludedItemIds, setExcludedItemIds] = useState<number[]>([]);
+  const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     loadStoredMeals().then(({ prompt: p, meals: m }) => {
@@ -91,13 +92,23 @@ export default function MealScreen() {
 
   const includedSet = useMemo(() => new Set(includedItemIds), [includedItemIds]);
   const excludedSet = useMemo(() => new Set(excludedItemIds), [excludedItemIds]);
-  const toggleInclude = (id: number) => {
-    setIncludedItemIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
-    setExcludedItemIds((prev) => prev.filter((x) => x !== id));
+  const getItemMode = (id: number): 'include' | 'exclude' | 'neutral' => {
+    if (includedSet.has(id)) return 'include';
+    if (excludedSet.has(id)) return 'exclude';
+    return 'neutral';
   };
-  const toggleExclude = (id: number) => {
-    setExcludedItemIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
-    setIncludedItemIds((prev) => prev.filter((x) => x !== id));
+  const cycleItemMode = (id: number) => {
+    const currentMode = getItemMode(id);
+    if (currentMode === 'neutral') {
+      setIncludedItemIds((prev) => [...prev, id]);
+      return;
+    }
+    if (currentMode === 'include') {
+      setIncludedItemIds((prev) => prev.filter((x) => x !== id));
+      setExcludedItemIds((prev) => [...prev, id]);
+      return;
+    }
+    setExcludedItemIds((prev) => prev.filter((x) => x !== id));
   };
 
   return (
@@ -114,36 +125,47 @@ export default function MealScreen() {
         </Text>
         {itemCount > 0 ? (
           <View style={styles.filters}>
-            <Text style={styles.filterLabel}>Kitchen filters</Text>
-            <Text style={styles.hint}>Choose items to prioritize or skip for this generation.</Text>
-            <Text style={styles.sectionTitle}>Prioritize</Text>
-            <View style={styles.chipWrap}>
-              {kitchenItems.map((item) => (
-                <Pressable
-                  key={`include-${item.id}`}
-                  onPress={() => toggleInclude(item.id)}
-                  style={[styles.chip, includedSet.has(item.id) && styles.chipInclude]}
-                >
-                  <Text style={[styles.chipText, includedSet.has(item.id) && styles.chipIncludeText]}>
-                    {item.name}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-            <Text style={styles.sectionTitle}>Exclude</Text>
-            <View style={styles.chipWrap}>
-              {kitchenItems.map((item) => (
-                <Pressable
-                  key={`exclude-${item.id}`}
-                  onPress={() => toggleExclude(item.id)}
-                  style={[styles.chip, excludedSet.has(item.id) && styles.chipExclude]}
-                >
-                  <Text style={[styles.chipText, excludedSet.has(item.id) && styles.chipExcludeText]}>
-                    {item.name}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
+            <Pressable style={styles.filterHeader} onPress={() => setShowFilters((prev) => !prev)}>
+              <Text style={styles.filterLabel}>Kitchen filters</Text>
+              <Text style={styles.filterMeta}>
+                +{includedItemIds.length} / -{excludedItemIds.length} • {showFilters ? 'Hide' : 'Show'}
+              </Text>
+            </Pressable>
+            {showFilters ? (
+              <>
+                <Text style={styles.hint}>Tap items to cycle: neutral → prioritize → exclude.</Text>
+                <View style={styles.legendRow}>
+                  <Text style={styles.legendText}>Green = prioritize</Text>
+                  <Text style={styles.legendText}>Red = exclude</Text>
+                </View>
+                <View style={styles.chipWrap}>
+                  {kitchenItems.map((item) => {
+                    const mode = getItemMode(item.id);
+                    return (
+                      <Pressable
+                        key={`filter-${item.id}`}
+                        onPress={() => cycleItemMode(item.id)}
+                        style={[
+                          styles.chip,
+                          mode === 'include' && styles.chipInclude,
+                          mode === 'exclude' && styles.chipExclude,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.chipText,
+                            mode === 'include' && styles.chipIncludeText,
+                            mode === 'exclude' && styles.chipExcludeText,
+                          ]}
+                        >
+                          {item.name}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </>
+            ) : null}
           </View>
         ) : null}
         <Input
@@ -185,15 +207,19 @@ const styles = StyleSheet.create({
   label: { color: colors.gray900, fontSize: 15, fontWeight: '600' },
   hint: { color: colors.gray500, fontSize: 13 },
   filters: { gap: spacing.xs },
-  filterLabel: { color: colors.gray900, fontSize: 14, fontWeight: '600' },
-  sectionTitle: {
-    color: colors.gray700,
-    fontSize: 12,
-    fontWeight: '700',
-    letterSpacing: 0.4,
-    marginTop: spacing.xs,
-    textTransform: 'uppercase',
+  filterHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
+  filterLabel: { color: colors.gray900, fontSize: 14, fontWeight: '600' },
+  filterMeta: {
+    color: colors.gray500,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  legendRow: { flexDirection: 'row', gap: spacing.sm },
+  legendText: { color: colors.gray500, fontSize: 12 },
   chipWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   chip: {
     backgroundColor: colors.gray100,
