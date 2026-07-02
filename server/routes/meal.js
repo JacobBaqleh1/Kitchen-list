@@ -21,7 +21,7 @@ const SYSTEM_PROMPT =
   'Respond ONLY with valid JSON matching the requested shape. No markdown, no explanation.';
 
 router.post('/suggest', async (req, res) => {
-  const { userPrompt } = req.body;
+  const { userPrompt, includeItemIds, excludeItemIds } = req.body || {};
 
   try {
     const unchecked = await db.select().from(items)
@@ -30,18 +30,43 @@ router.post('/suggest', async (req, res) => {
       return res.status(400).json({ error: 'No items in stock to suggest meals from' });
     }
 
+    const toIdSet = (value) =>
+      new Set(
+        (Array.isArray(value) ? value : [])
+          .map((id) => Number(id))
+          .filter((id) => Number.isInteger(id)),
+      );
+    const excludedIds = toIdSet(excludeItemIds);
+    const includedIds = toIdSet(includeItemIds);
+    for (const id of excludedIds) includedIds.delete(id); // exclusion wins on conflicts.
+
+    const selectedItems = unchecked.filter(
+      (item) => !excludedIds.has(item.id) && (includedIds.size === 0 || includedIds.has(item.id)),
+    );
+    if (!selectedItems.length) {
+      return res.status(400).json({
+        error: 'No matching in-stock items for the selected meal filters',
+      });
+    }
+
     const [prefs] = await db.select().from(preferences)
       .where(eq(preferences.userId, req.user.id));
     const allergies = prefs?.allergies || [];
     const dislikes = prefs?.dislikes || [];
 
-    const fridgeItems = unchecked.filter(i => i.location === 'fridge');
-    const freezerItems = unchecked.filter(i => i.location === 'freezer');
-    const pantryItems = unchecked.filter(i => i.location === 'pantry');
+    const fridgeItems = selectedItems.filter(i => i.location === 'fridge');
+    const freezerItems = selectedItems.filter(i => i.location === 'freezer');
+    const pantryItems = selectedItems.filter(i => i.location === 'pantry');
     const fmt = arr => arr.length ? arr.map(i => `${i.quantity}x ${i.name}`).join(', ') : 'none';
+    const includedNames = unchecked
+      .filter((item) => includedIds.has(item.id))
+      .map((item) => item.name);
+    const excludedNames = unchecked
+      .filter((item) => excludedIds.has(item.id))
+      .map((item) => item.name);
 
     // 1. Retrieve relevant cached recipe context from Neon (cheap, read-only).
-    const ingredientNames = unchecked.map(i => i.name);
+    const ingredientNames = selectedItems.map(i => i.name);
     const { rows: contextRows, contextString } = await retrieveRecipeContext({
       ingredients: ingredientNames,
       userPrompt,
@@ -57,7 +82,9 @@ router.post('/suggest', async (req, res) => {
 Freezer contains: ${fmt(freezerItems)}
 Pantry contains: ${fmt(pantryItems)}
 Allergies (never include): ${allergies.length ? allergies.join(', ') : 'none'}
-Dislikes (avoid): ${dislikes.length ? dislikes.join(', ') : 'none'}${userPrompt ? `\nExtra request: ${userPrompt}` : ''}
+Dislikes (avoid): ${dislikes.length ? dislikes.join(', ') : 'none'}
+Explicit include filter from user: ${includedNames.length ? includedNames.join(', ') : 'none'}
+Explicit exclude filter from user: ${excludedNames.length ? excludedNames.join(', ') : 'none'}${userPrompt ? `\nExtra request: ${userPrompt}` : ''}
 
 Return JSON in this exact shape:
 {
