@@ -33,6 +33,7 @@ export default function MealSuggest() {
   const [kitchenItems, setKitchenItems] = useState([]);
   const [includedItemIds, setIncludedItemIds] = useState([]);
   const [excludedItemIds, setExcludedItemIds] = useState([]);
+  const [showFilters, setShowFilters] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -69,14 +70,24 @@ export default function MealSuggest() {
     }
   };
 
-  const toggleInclude = id => {
-    setIncludedItemIds(prev => (prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]));
-    setExcludedItemIds(prev => prev.filter(x => x !== id));
+  const getItemMode = id => {
+    if (includedItemIds.includes(id)) return 'include';
+    if (excludedItemIds.includes(id)) return 'exclude';
+    return 'neutral';
   };
 
-  const toggleExclude = id => {
-    setExcludedItemIds(prev => (prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]));
-    setIncludedItemIds(prev => prev.filter(x => x !== id));
+  const cycleItemMode = id => {
+    const mode = getItemMode(id);
+    if (mode === 'neutral') {
+      setIncludedItemIds(prev => [...prev, id]);
+      return;
+    }
+    if (mode === 'include') {
+      setIncludedItemIds(prev => prev.filter(x => x !== id));
+      setExcludedItemIds(prev => [...prev, id]);
+      return;
+    }
+    setExcludedItemIds(prev => prev.filter(x => x !== id));
   };
 
   return (
@@ -95,44 +106,46 @@ export default function MealSuggest() {
         </p>
         {itemCount > 0 && (
           <div className="mb-3 space-y-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
-            <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-600">Prioritize</p>
-              <div className="flex flex-wrap gap-2">
-                {kitchenItems.map(item => (
-                  <button
-                    key={`include-${item.id}`}
-                    type="button"
-                    onClick={() => toggleInclude(item.id)}
-                    className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
-                      includedItemIds.includes(item.id)
-                        ? 'border-green-600 bg-green-100 text-green-700'
-                        : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
-                    }`}
-                  >
-                    {item.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-600">Exclude</p>
-              <div className="flex flex-wrap gap-2">
-                {kitchenItems.map(item => (
-                  <button
-                    key={`exclude-${item.id}`}
-                    type="button"
-                    onClick={() => toggleExclude(item.id)}
-                    className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
-                      excludedItemIds.includes(item.id)
-                        ? 'border-red-300 bg-red-100 text-red-700'
-                        : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
-                    }`}
-                  >
-                    {item.name}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <button
+              type="button"
+              className="flex w-full items-center justify-between"
+              onClick={() => setShowFilters(prev => !prev)}
+            >
+              <p className="text-sm font-semibold text-gray-900">Kitchen filters</p>
+              <span className="text-xs font-semibold text-gray-500">
+                +{includedItemIds.length} / -{excludedItemIds.length} • {showFilters ? 'Hide' : 'Show'}
+              </span>
+            </button>
+            {showFilters && (
+              <>
+                <p className="text-xs text-gray-500">Click items to cycle: neutral → prioritize → exclude.</p>
+                <div className="flex gap-3 text-xs text-gray-500">
+                  <span>Green = prioritize</span>
+                  <span>Red = exclude</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {kitchenItems.map(item => {
+                    const mode = getItemMode(item.id);
+                    return (
+                      <button
+                        key={`filter-${item.id}`}
+                        type="button"
+                        onClick={() => cycleItemMode(item.id)}
+                        className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
+                          mode === 'include'
+                            ? 'border-green-600 bg-green-100 text-green-700'
+                            : mode === 'exclude'
+                              ? 'border-red-300 bg-red-100 text-red-700'
+                              : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                        }`}
+                      >
+                        {item.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
           </div>
         )}
         <textarea
