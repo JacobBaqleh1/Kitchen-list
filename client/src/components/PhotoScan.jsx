@@ -103,6 +103,8 @@ export function PhotoScan({ onItemsConfirmed, location }) {
   const [detected, setDetected] = useState(null);
   const [error, setError] = useState('');
   const [adding, setAdding] = useState(false);
+  const [parsingText, setParsingText] = useState(false);
+  const [textInput, setTextInput] = useState('');
   const [manualAddOpen, setManualAddOpen] = useState(false);
   const foodRef = useRef();
   const receiptRef = useRef();
@@ -113,6 +115,7 @@ export function PhotoScan({ onItemsConfirmed, location }) {
     e.target.value = '';
     setScanning(true);
     setDetected(null);
+    setManualAddOpen(false);
     setError('');
 
     try {
@@ -141,6 +144,26 @@ export function PhotoScan({ onItemsConfirmed, location }) {
     setManualAddOpen(false);
   };
 
+  const handleParseText = async () => {
+    if (!textInput.trim()) return;
+    setParsingText(true);
+    setDetected(null);
+    setManualAddOpen(false);
+    setError('');
+
+    try {
+      const data = await apiFetch('/api/photos/parse-text', {
+        method: 'POST',
+        body: JSON.stringify({ text: textInput }),
+      });
+      setDetected(data.items.map(i => ({ ...i, location })));
+    } catch {
+      setError('Could not parse text, please try again.');
+    } finally {
+      setParsingText(false);
+    }
+  };
+
   const confirmAdd = async () => {
     if (!detected?.length) return;
     setAdding(true);
@@ -158,7 +181,7 @@ export function PhotoScan({ onItemsConfirmed, location }) {
 
   return (
     <div className="mb-5 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-      <div className="mb-3 text-sm font-semibold text-gray-900">Scan photo</div>
+      <div className="mb-3 text-sm font-semibold text-gray-900">Scan photo or paste text</div>
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         <button
           className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white px-4 py-3 text-left transition-colors cursor-pointer enabled:hover:border-green-600 enabled:hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
@@ -189,10 +212,49 @@ export function PhotoScan({ onItemsConfirmed, location }) {
       <input ref={foodRef} type="file" accept="image/*" hidden onChange={e => handleFile(e, 'food')} />
       <input ref={receiptRef} type="file" accept="image/*" hidden onChange={e => handleFile(e, 'receipt')} />
 
+      <div className="mt-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
+        <label htmlFor="bulk-text-input" className="mb-1 block text-xs font-semibold text-gray-700">
+          Paste a long receipt/list text
+        </label>
+        <textarea
+          id="bulk-text-input"
+          className="input min-h-24 w-full resize-y"
+          placeholder="Example: SALMON SMKD WILD... BANANA EACH... SLCD TURKEY"
+          value={textInput}
+          onChange={e => setTextInput(e.target.value)}
+        />
+        <div className="mt-2 flex flex-wrap gap-2">
+          <button
+            type="button"
+            className="btn btn-primary btn-sm"
+            onClick={handleParseText}
+            disabled={parsingText || scanning || !textInput.trim()}
+          >
+            {parsingText ? 'Parsing...' : 'Parse pasted text with AI'}
+          </button>
+          {textInput && (
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm"
+              onClick={() => setTextInput('')}
+              disabled={parsingText}
+            >
+              Clear text
+            </button>
+          )}
+        </div>
+      </div>
+
       {scanning && (
         <div className="mt-2 inline-flex items-center gap-2 text-sm text-gray-500">
           <span className="spinner size-5" />
           <span>Reading your photo...</span>
+        </div>
+      )}
+      {parsingText && (
+        <div className="mt-2 inline-flex items-center gap-2 text-sm text-gray-500">
+          <span className="spinner size-5" />
+          <span>Parsing your text...</span>
         </div>
       )}
 

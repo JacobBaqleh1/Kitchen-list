@@ -95,4 +95,36 @@ router.post('/scan', upload.single('image'), async (req, res) => {
   }
 });
 
+router.post('/parse-text', async (req, res) => {
+  const text = typeof req.body?.text === 'string' ? req.body.text.trim() : '';
+  if (!text) return res.status(400).json({ error: 'text is required' });
+
+  try {
+    const raw = await invokeNova({
+      model: NOVA_MODELS.lite,
+      maxTokens: 1024,
+      system: 'You extract grocery and food items from noisy pasted text. Return ONLY valid JSON, no markdown: { "items": [{ "name": "string", "quantity": 1 }] }. Split concatenated words into likely grocery items where appropriate (example: "apricotsushi" -> apricot, sushi). Ignore prices, discounts, dates, store metadata, order numbers, and non-food lines.',
+      user: `Parse this text into grocery items:\n\n${text}`,
+    });
+
+    const parsed = extractJson(raw);
+    if (!parsed || !Array.isArray(parsed.items)) {
+      console.error('Nova raw response:', String(raw).slice(0, 500));
+      return res.status(500).json({ error: 'Could not parse text, please try again' });
+    }
+
+    const items = parsed.items
+      .map((item) => ({
+        name: String(item?.name || '').trim(),
+        quantity: Number(item?.quantity) > 0 ? Number(item.quantity) : 1,
+      }))
+      .filter(item => item.name);
+
+    res.json({ items });
+  } catch (e) {
+    console.error('Text parse error:', e.message);
+    res.status(500).json({ error: e.message || 'Could not parse text, please try again' });
+  }
+});
+
 export default router;
