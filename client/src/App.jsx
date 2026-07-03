@@ -10,7 +10,6 @@ import { auth, usePersistentSession, clientSignOut, useAuthError, clearAuthError
 import { setAuthToken, apiFetch } from './api';
 import { prefetchItems } from './lib/itemsCache';
 import FridgeView from './pages/FridgeView';
-import HomePage from './pages/HomePage';
 import MealSuggest from './pages/MealSuggest';
 import Settings from './pages/Settings';
 import SharePage from './pages/SharePage';
@@ -35,8 +34,7 @@ function Nav() {
           MyKitchenList
         </Link>
         <div className="order-3 flex w-full justify-between gap-1 sm:order-0 sm:w-auto sm:justify-start">
-          <NavLink to="/" end className={navLinkClass}>Home</NavLink>
-          <NavLink to="/fridge" className={navLinkClass}>Fridge &amp; Pantry</NavLink>
+          <NavLink to="/" end className={navLinkClass}>Fridge &amp; Pantry</NavLink>
           <NavLink to="/meal" className={navLinkClass}>Meal Ideas</NavLink>
           <NavLink to="/share" className={navLinkClass}>Share</NavLink>
           <NavLink to="/settings" className={navLinkClass}>Settings</NavLink>
@@ -272,8 +270,7 @@ function AppWithAuth() {
         <Route path="/auth/*" element={<AuthPage />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/s/:token" element={<SharedListView />} />
-        <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
-        <Route path="/fridge" element={<ProtectedRoute><FridgeView /></ProtectedRoute>} />
+        <Route path="/" element={<ProtectedRoute><FridgeView /></ProtectedRoute>} />
         <Route path="/meal" element={<ProtectedRoute><MealSuggest /></ProtectedRoute>} />
         <Route path="/share" element={<ProtectedRoute><SharePage /></ProtectedRoute>} />
         <Route path="/preferences" element={<Navigate to="/settings" replace />} />

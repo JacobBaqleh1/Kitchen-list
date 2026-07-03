@@ -10,15 +10,6 @@ export const colors = {
   gray500: '#6b7280',
   gray700: '#374151',
   gray900: '#111827',
-  travertine50: '#faf8f5',
-  travertine100: '#f3ede4',
-  travertine200: '#e6d9c8',
-  travertine300: '#d4c0a5',
-  travertine500: '#9a7f62',
-  travertine600: '#7d664e',
-  travertine700: '#5f4d3b',
-  travertine800: '#42362a',
-  travertine900: '#2b231c',
   white: '#ffffff',
   red50: '#fef2f2',
   red200: '#fecaca',
@@ -29,11 +20,6 @@ export const colors = {
   amber200: '#fde68a',
   amber600: '#d97706',
   amber800: '#92400e',
-};
-
-export const fonts = {
-  display: 'Cinzel_600SemiBold',
-  sans: 'Nunito_600SemiBold',
 };
 
 export const spacing = {
