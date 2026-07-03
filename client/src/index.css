@@ -7,6 +7,21 @@
 @import '@neondatabase/auth-ui/css' layer(neon-auth);
 @import "tailwindcss";
 
+@theme {
+  --font-display: 'Cinzel', Georgia, 'Times New Roman', serif;
+  --font-sans: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --color-travertine-50: #faf8f5;
+  --color-travertine-100: #f3ede4;
+  --color-travertine-200: #e6d9c8;
+  --color-travertine-300: #d4c0a5;
+  --color-travertine-400: #b89d7e;
+  --color-travertine-500: #9a7f62;
+  --color-travertine-600: #7d664e;
+  --color-travertine-700: #5f4d3b;
+  --color-travertine-800: #42362a;
+  --color-travertine-900: #2b231c;
+}
+
 /* Brand the Neon auth-ui widget with the MyKitchenList green. The widget reads
    a consumer-provided --primary (falling back to near-black), so defining these
    here themes its primary button, links, and focus rings to match the app. */
@@ -24,12 +39,12 @@
     /* Pin to the intended light theme so the canvas doesn't follow the OS
        dark mode (which left the root bg black on macOS, white on iOS). */
     color-scheme: light;
-    background-color: #f9fafb; /* gray-50 */
+    background-color: var(--color-travertine-50);
   }
   body {
     cursor: default;
-    color: #111827; /* gray-900 — default text, not OS-dependent */
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: var(--color-travertine-900);
+    font-family: var(--font-sans);
   }
 }
 
@@ -55,6 +70,18 @@
   }
   .btn-white {
     @apply bg-white font-semibold text-green-600 enabled:hover:bg-green-50;
+  }
+
+  .home-tile {
+    @apply flex flex-col items-center justify-center gap-2 rounded-3xl border border-travertine-300/50 bg-linear-to-br from-travertine-100 to-travertine-200 p-4 text-center shadow-md shadow-travertine-400/20 transition-all duration-200 hover:scale-[1.03] hover:shadow-lg hover:shadow-travertine-400/30 active:scale-[0.97] cursor-pointer select-none;
+  }
+
+  .home-tile-icon {
+    @apply flex size-12 items-center justify-center rounded-2xl bg-white/70 text-2xl shadow-sm ring-1 ring-travertine-300/40;
+  }
+
+  .home-tile-label {
+    @apply font-display text-sm font-semibold tracking-wide text-travertine-800 sm:text-base;
   }
 
   .input {
