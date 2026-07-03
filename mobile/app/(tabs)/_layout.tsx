@@ -17,20 +17,12 @@ export default function TabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
+          title: 'Fridge',
           headerTitle: 'MyKitchenList',
           headerRight: () => <UserMenuButton />,
           tabBarIcon: ({ color }) => (
-            <SymbolView name={{ ios: 'house', android: 'home', web: 'home' }} tintColor={color} size={24} />
+            <SymbolView name={{ ios: 'refrigerator', android: 'kitchen', web: 'kitchen' }} tintColor={color} size={24} />
           ),
-        }}
-      />
-      <Tabs.Screen
-        name="fridge"
-        options={{
-          title: 'Fridge',
-          headerTitle: 'Fridge & Pantry',
-          href: null,
         }}
       />
       <Tabs.Screen

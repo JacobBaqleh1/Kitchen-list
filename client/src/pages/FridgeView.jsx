@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { usePersistentSession } from '../auth';
 import { apiFetch } from '../api';
 import { readItemsCache, writeItemsCache, prefetchItems } from '../lib/itemsCache';
@@ -27,36 +27,14 @@ export default function FridgeView() {
   const { data: sessionData } = usePersistentSession();
   const userId = sessionData?.user?.id ?? null;
   const cachedItems = userId ? readItemsCache(userId) : null;
-  const [searchParams] = useSearchParams();
 
   const [items, setItems] = useState(() => cachedItems ?? []);
-  const [activeTab, setActiveTab] = useState(() => {
-    const loc = searchParams.get('location');
-    return loc === 'freezer' || loc === 'pantry' ? loc : 'fridge';
-  });
+  const [activeTab, setActiveTab] = useState('fridge');
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState(() => loadItemSort());
   const [loading, setLoading] = useState(() => cachedItems === null);
   const [error, setError] = useState('');
   const navigate = useNavigate();
-  const addFormRef = useRef(null);
-  const scanRef = useRef(null);
-
-  useEffect(() => {
-    const loc = searchParams.get('location');
-    if (loc === 'fridge' || loc === 'freezer' || loc === 'pantry') {
-      setActiveTab(loc);
-    }
-  }, [searchParams]);
-
-  useEffect(() => {
-    const focus = searchParams.get('focus');
-    if (focus === 'add') {
-      addFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    } else if (focus === 'scan') {
-      scanRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }, [searchParams]);
 
   const fetchItems = useCallback(async () => {
     if (!userId) return;
@@ -146,12 +124,8 @@ export default function FridgeView() {
         </button>
       </div>
 
-      <div ref={addFormRef}>
-        <AddItemForm onAdd={handleAdd} defaultLocation={activeTab} />
-      </div>
-      <div ref={scanRef}>
-        <PhotoScan onItemsConfirmed={handleBulkAdd} location={activeTab} />
-      </div>
+      <AddItemForm onAdd={handleAdd} defaultLocation={activeTab} />
+      <PhotoScan onItemsConfirmed={handleBulkAdd} location={activeTab} />
 
       <div className="mb-6 flex w-full gap-1 rounded-lg bg-gray-200 p-1 sm:w-fit">
         <button className={tabClass('fridge')} onClick={() => { setActiveTab('fridge'); setSearch(''); }}>Fridge</button>
