@@ -27,7 +27,7 @@ cd client && npm run dev    # Vite on :5173
 ```
 
 `GET http://localhost:3001/health` → `{"status":"ok"}` confirms the real Neon DB
-connection. The full flow has been verified end-to-end: Neon Auth sign-up/login,
+connection. Production monitoring: see `docs/MONITORING.md`. The full flow has been verified end-to-end: Neon Auth sign-up/login,
 adding fridge items (persisted to Neon), and AI meal suggestions via AWS Bedrock
 (Amazon Nova).
 
