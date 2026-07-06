@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { apiFetch } from '../api';
+import { auth, clientSignOut } from '../auth';
 import { clearMealCache, loadItemSort, saveItemSort } from '../lib/appSettings';
 
 const SORT_OPTIONS = [
@@ -9,6 +10,7 @@ const SORT_OPTIONS = [
 ];
 
 export default function Settings() {
+  const navigate = useNavigate();
   const [allergies, setAllergies] = useState([]);
   const [dislikes, setDislikes] = useState([]);
   const [newAllergy, setNewAllergy] = useState('');
@@ -18,6 +20,11 @@ export default function Settings() {
   const [cacheCleared, setCacheCleared] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteError, setDeleteError] = useState('');
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteNotice, setDeleteNotice] = useState('');
 
   useEffect(() => {
     apiFetch('/api/preferences')
@@ -73,6 +80,31 @@ export default function Settings() {
     clearMealCache();
     setCacheCleared(true);
     setTimeout(() => setCacheCleared(false), 2000);
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeleteLoading(true);
+    setDeleteError('');
+    setDeleteNotice('');
+    try {
+      await apiFetch('/api/account', { method: 'DELETE' });
+      const payload = deletePassword.trim()
+        ? { password: deletePassword.trim(), callbackURL: '/auth/sign-in' }
+        : { callbackURL: '/auth/sign-in' };
+      const result = await auth.deleteUser(payload);
+      const message = result?.data?.message;
+      if (message === 'Verification email sent') {
+        setDeleteNotice('Check your email to confirm account deletion.');
+        setShowDeleteConfirm(false);
+        return;
+      }
+      await clientSignOut();
+      navigate('/auth/sign-in', { replace: true });
+    } catch (e) {
+      setDeleteError(e instanceof Error ? e.message : 'Could not delete account');
+    } finally {
+      setDeleteLoading(false);
+    }
   };
 
   if (loading) {
@@ -195,6 +227,72 @@ export default function Settings() {
         <button type="button" className="btn btn-secondary btn-sm" onClick={handleClearMeals}>
           Clear saved meals
         </button>
+      </div>
+
+      <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Account</h2>
+
+      <div className="mb-6 rounded-xl border border-red-200 bg-white p-5 shadow-sm">
+        <div className="mb-0.5 font-semibold text-red-700">Delete account</div>
+        <p className="mb-3 text-sm text-gray-500">
+          Permanently delete your account, inventory, preferences, and shared lists. This cannot be undone.
+        </p>
+        {!showDeleteConfirm ? (
+          <button
+            type="button"
+            className="btn btn-sm border border-red-200 bg-red-50 text-red-700 hover:bg-red-100"
+            onClick={() => {
+              setShowDeleteConfirm(true);
+              setDeleteError('');
+              setDeleteNotice('');
+            }}
+          >
+            Delete my account
+          </button>
+        ) : (
+          <div className="space-y-3">
+            <p className="text-sm text-gray-700">
+              Type your password if you signed up with email, then confirm deletion.
+            </p>
+            <input
+              className="input w-full"
+              type="password"
+              placeholder="Password (email accounts)"
+              value={deletePassword}
+              onChange={(e) => setDeletePassword(e.target.value)}
+              autoComplete="current-password"
+            />
+            {deleteError && (
+              <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                {deleteError}
+              </div>
+            )}
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="btn btn-sm border border-red-200 bg-red-600 text-white hover:bg-red-700"
+                disabled={deleteLoading}
+                onClick={handleDeleteAccount}
+              >
+                {deleteLoading ? 'Deleting...' : 'Confirm deletion'}
+              </button>
+              <button
+                type="button"
+                className="btn btn-secondary btn-sm"
+                disabled={deleteLoading}
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setDeletePassword('');
+                  setDeleteError('');
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+        {deleteNotice && (
+          <p className="mt-3 text-sm font-medium text-amber-800">{deleteNotice}</p>
+        )}
       </div>
 
       <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">About</h2>

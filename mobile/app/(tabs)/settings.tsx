@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Link, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Link, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { clientSignOut } from '@/src/auth';
+import { auth, clientSignOut } from '@/src/auth';
 import { apiFetch } from '@/src/api';
 import { loadItemSort, saveItemSort, clearMealCache } from '@/src/lib/app-settings';
 import { Button } from '@/src/components/button';
@@ -26,6 +26,11 @@ export default function SettingsScreen() {
   const [cacheCleared, setCacheCleared] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleteError, setDeleteError] = useState('');
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteNotice, setDeleteNotice] = useState('');
 
   useEffect(() => {
     loadItemSort().then(setDefaultSort);
@@ -78,6 +83,41 @@ export default function SettingsScreen() {
   const signOut = async () => {
     await clientSignOut();
     router.replace('/(auth)/sign-in');
+  };
+
+  const deleteAccount = async () => {
+    setDeleteLoading(true);
+    setDeleteError('');
+    setDeleteNotice('');
+    try {
+      await apiFetch('/api/account', { method: 'DELETE' });
+      const payload = deletePassword.trim()
+        ? { password: deletePassword.trim(), callbackURL: 'mykitchenlist://' }
+        : { callbackURL: 'mykitchenlist://' };
+      const result = await auth.deleteUser(payload);
+      if (result?.data?.message === 'Verification email sent') {
+        setDeleteNotice('Check your email to confirm account deletion.');
+        setShowDeleteConfirm(false);
+        return;
+      }
+      await clientSignOut();
+      router.replace('/(auth)/sign-in');
+    } catch (e) {
+      setDeleteError(e instanceof Error ? e.message : 'Could not delete account');
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const confirmDeleteAccount = () => {
+    Alert.alert(
+      'Delete account?',
+      'This permanently deletes your inventory, preferences, and shared lists. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Continue', style: 'destructive', onPress: () => setShowDeleteConfirm(true) },
+      ],
+    );
   };
 
   if (loading) return <Spinner label="Loading..." />;
@@ -163,7 +203,51 @@ export default function SettingsScreen() {
       </Card>
 
       <SectionLabel>Account</SectionLabel>
-      <Button title="Sign out" variant="danger" onPress={signOut} />
+      <Card style={styles.card}>
+        <Text style={styles.cardTitle}>Sign out</Text>
+        <Button title="Sign out" variant="secondary" onPress={signOut} />
+      </Card>
+
+      <Card style={[styles.card, styles.dangerCard]}>
+        <Text style={styles.dangerTitle}>Delete account</Text>
+        <Text style={styles.hint}>
+          Permanently delete your account and all associated data. This cannot be undone.
+        </Text>
+        {!showDeleteConfirm ? (
+          <Button title="Delete my account" variant="danger" onPress={confirmDeleteAccount} />
+        ) : (
+          <View style={styles.deleteForm}>
+            <Text style={styles.hint}>
+              Enter your password if you signed up with email, then confirm.
+            </Text>
+            <Input
+              placeholder="Password (email accounts)"
+              secureTextEntry
+              value={deletePassword}
+              onChangeText={setDeletePassword}
+              autoCapitalize="none"
+            />
+            {deleteError ? <ErrorBanner message={deleteError} /> : null}
+            <Button
+              title={deleteLoading ? 'Deleting...' : 'Confirm deletion'}
+              variant="danger"
+              loading={deleteLoading}
+              onPress={deleteAccount}
+            />
+            <Button
+              title="Cancel"
+              variant="secondary"
+              disabled={deleteLoading}
+              onPress={() => {
+                setShowDeleteConfirm(false);
+                setDeletePassword('');
+                setDeleteError('');
+              }}
+            />
+          </View>
+        )}
+        {deleteNotice ? <Text style={styles.notice}>{deleteNotice}</Text> : null}
+      </Card>
 
       {saved ? <Text style={styles.flash}>✓ Saved</Text> : null}
       {cacheCleared ? <Text style={styles.flash}>✓ Saved meals cleared</Text> : null}
@@ -236,5 +320,9 @@ const styles = StyleSheet.create({
   sortTextActive: { color: colors.green700, fontWeight: '600' },
   linkRow: { marginTop: spacing.sm },
   linkText: { color: colors.green600, fontSize: 14, fontWeight: '600' },
+  dangerCard: { borderColor: colors.red200, gap: spacing.sm },
+  dangerTitle: { color: colors.red700, fontSize: 15, fontWeight: '600' },
+  deleteForm: { gap: spacing.sm },
+  notice: { color: colors.amber600, fontSize: 13, fontWeight: '600', marginTop: spacing.xs },
   flash: { color: colors.green700, fontSize: 14, fontWeight: '600', marginTop: spacing.md },
 });

@@ -1,7 +1,7 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text, type PressableProps } from 'react-native';
 import { colors, spacing } from '@/src/theme';
 
-type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'white';
+type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'white' | 'apple';
 
 type Props = PressableProps & {
   title: string;
@@ -16,6 +16,7 @@ const variantStyles: Record<Variant, { bg: string; text: string; border?: string
   ghost: { bg: 'transparent', text: colors.gray700 },
   danger: { bg: colors.red50, text: colors.red700, border: colors.red200 },
   white: { bg: colors.white, text: colors.green700 },
+  apple: { bg: '#000000', text: colors.white },
 };
 
 export function Button({ title, variant = 'primary', loading, small, disabled, style, ...rest }: Props) {

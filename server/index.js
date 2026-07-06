@@ -9,6 +9,7 @@ import preferencesRouter from './routes/preferences.js';
 import mealRouter from './routes/meal.js';
 import photosRouter from './routes/photos.js';
 import sharesRouter from './routes/shares.js';
+import accountRouter from './routes/account.js';
 import { requireAuth } from './middleware/auth.js';
 import { initShareChat } from './ws/shareChat.js';
 
@@ -37,6 +38,7 @@ app.use('/api/preferences', preferencesRouter);
 app.use('/api/meal', mealRouter);
 app.use('/api/photos', photosRouter);
 app.use('/api/shares', sharesRouter);
+app.use('/api/account', accountRouter);
 
 // Authoritative session check: verifies the bearer token server-side and echoes
 // the user it resolves to. Clients (notably the iOS standalone PWA, which can
@@ -48,12 +50,23 @@ app.get('/api/auth/session', requireAuth, (req, res) => {
 
 // Touches the DB so UptimeRobot's 5-min ping keeps both the Render process and
 // the Neon compute warm (SELECT 1 = negligible payload, no auth required).
+// See docs/MONITORING.md for how to use this in production.
+const startedAt = Date.now();
 app.get('/health', async (_, res) => {
+  const mem = process.memoryUsage();
+  const base = {
+    uptimeSeconds: Math.floor((Date.now() - startedAt) / 1000),
+    memoryMb: {
+      heapUsed: Math.round(mem.heapUsed / 1024 / 1024),
+      rss: Math.round(mem.rss / 1024 / 1024),
+    },
+    timestamp: new Date().toISOString(),
+  };
   try {
     await db.execute(sql`SELECT 1`);
-    res.json({ status: 'ok' });
+    res.json({ status: 'ok', db: 'ok', ...base });
   } catch {
-    res.status(500).json({ status: 'db_error' });
+    res.status(503).json({ status: 'degraded', db: 'error', ...base });
   }
 });
 
