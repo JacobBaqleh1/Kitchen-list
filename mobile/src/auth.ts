@@ -58,6 +58,7 @@ export const auth = createAuthClient(NEON_AUTH_URL, {
   signIn: { email: (args: { email: string; password: string }) => Promise<unknown>; social: (args: { provider: string; callbackURL: string }) => Promise<unknown> };
   signUp: { email: (args: { email: string; password: string; name: string }) => Promise<unknown> };
   signOut: () => Promise<unknown>;
+  deleteUser: (args?: { password?: string; callbackURL?: string }) => Promise<{ data?: { message?: string } }>;
   useSession: () => { data: unknown; isPending: boolean; refetch?: (...args: unknown[]) => Promise<unknown> };
   getSession: () => Promise<{ data: { session?: { token?: string }; user?: unknown } | null }>;
 };

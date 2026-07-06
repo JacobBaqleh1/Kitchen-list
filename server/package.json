@@ -11,7 +11,8 @@
     "db:push": "drizzle-kit push",
     "db:setup-search": "node scripts/setup-search.js",
     "db:setup-indexes": "node scripts/setup-indexes.js",
-    "seed:recipes": "node scripts/seed-recipes.js"
+    "seed:recipes": "node scripts/seed-recipes.js",
+    "icons:mobile": "node ../scripts/generate-mobile-icons.mjs"
   },
   "dependencies": {
     "@anthropic-ai/bedrock-sdk": "^0.29.2",

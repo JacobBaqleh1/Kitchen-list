@@ -261,7 +261,7 @@ function AppWithAuth() {
       replace={(path) => navigate(path, { replace: true })}
       Link={RouterLink}
       redirectTo="/"
-      social={{ providers: ["google", "github"] }}
+      social={{ providers: ["google", "github", "apple"] }}
       localization={{ SIGN_IN_WITH: 'Continue with' }}
     >
       <SessionTokenSync />

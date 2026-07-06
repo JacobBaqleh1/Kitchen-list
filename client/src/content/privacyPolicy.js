@@ -35,7 +35,7 @@ export const PRIVACY_POLICY = {
       heading: 'Data retention and deletion',
       paragraphs: [
         'We keep your data while your account is active. You can delete individual items at any time in the app.',
-        'To delete your account and associated data, email us at the address below. We will process deletion requests within 30 days.',
+        'You can delete your account and all associated data from Settings. Deletion is permanent and removes your inventory, preferences, and shared lists.',
       ],
     },
     {

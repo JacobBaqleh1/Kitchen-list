@@ -42,7 +42,7 @@ export default function SignInScreen() {
     }
   };
 
-  const socialSignIn = async (provider: 'google' | 'github') => {
+  const socialSignIn = async (provider: 'google' | 'github' | 'apple') => {
     setSocialLoading(provider);
     clearAuthError();
     try {
@@ -100,6 +100,14 @@ export default function SignInScreen() {
             onPress={() => socialSignIn('google')}
             loading={socialLoading === 'google'}
           />
+          {Platform.OS === 'ios' ? (
+            <Button
+              title="Continue with Apple"
+              variant="apple"
+              onPress={() => socialSignIn('apple')}
+              loading={socialLoading === 'apple'}
+            />
+          ) : null}
           <Button
             title="Continue with GitHub"
             variant="secondary"

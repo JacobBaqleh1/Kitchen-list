@@ -35,6 +35,7 @@ Required env vars (see `server/.env.example` / `client/.env.example`):
 - **Neon DB**: `DATABASE_URL` (server). The `@neondatabase/serverless` driver
   talks to Neon's SQL-over-HTTP endpoint directly — no local DB needed.
 - **Neon Auth**: `NEON_AUTH_JWKS_URL` (server), `VITE_NEON_AUTH_URL` (client).
+- **Sign in with Apple**: enable the Apple provider in the Neon Console (Auth settings) with your Apple Service ID, Team ID, Key ID, and `.p8` key. Register redirect URI `{NEON_AUTH_BASE_URL}/callback/apple` in Apple Developer Portal. The mobile and web clients already expose an Apple sign-in button once the provider is configured.
 - **AWS Bedrock**: `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` / `AWS_REGION`
   — only for `/api/meal/suggest` and `/api/photos/scan`.
 - **Box**: `BOX_*` — only for `/api/photos/scan` uploads. The `BOX_PRIVATE_KEY`
