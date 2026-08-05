@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { eq, inArray } from 'drizzle-orm';
 import { db } from '../db.js';
-import { items, preferences, receipts, shares, shareMessages } from '../schema.js';
+import { items, preferences, receipts, savedMeals, shares, shareMessages } from '../schema.js';
 import { requireAuth } from '../middleware/auth.js';
 
 const router = Router();
@@ -24,6 +24,7 @@ router.delete('/', async (req, res) => {
     await db.delete(items).where(eq(items.userId, userId));
     await db.delete(preferences).where(eq(preferences.userId, userId));
     await db.delete(receipts).where(eq(receipts.userId, userId));
+    await db.delete(savedMeals).where(eq(savedMeals.userId, userId));
 
     res.json({ ok: true });
   } catch (e) {
