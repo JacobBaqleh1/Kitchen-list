@@ -20,6 +20,7 @@ type Props = {
 export function MealCard({ meal, savedId, onSave, onUnsave, saving }: Props) {
   const showSave = onSave || onUnsave;
   const shoppingList = meal.shopping_list ?? meal.shoppingList;
+  const label = saving ? (savedId ? 'Removing…' : 'Saving…') : savedId ? 'Saved' : 'Save';
 
   return (
     <View style={styles.card}>
@@ -27,24 +28,27 @@ export function MealCard({ meal, savedId, onSave, onUnsave, saving }: Props) {
         <Text style={styles.title}>{meal.name}</Text>
         {showSave ? (
           <Pressable
-            style={({ pressed }) => [styles.saveBtn, pressed && styles.saveBtnPressed]}
+            style={({ pressed }) => [
+              styles.saveBtn,
+              savedId && !saving && styles.saveBtnSaved,
+              pressed && styles.saveBtnPressed,
+            ]}
             onPress={savedId ? onUnsave : onSave}
             disabled={saving}
             accessibilityRole="button"
+            accessibilityState={{ busy: !!saving, disabled: !!saving }}
             accessibilityLabel={savedId ? 'Remove saved recipe' : 'Save recipe'}
           >
             {saving ? (
               <ActivityIndicator color={colors.white} size="small" />
             ) : (
-              <>
-                <SymbolView
-                  name={{ ios: savedId ? 'bookmark.fill' : 'bookmark', android: 'bookmark', web: 'bookmark' }}
-                  tintColor={colors.white}
-                  size={16}
-                />
-                <Text style={styles.saveText}>{savedId ? 'Saved' : 'Save'}</Text>
-              </>
+              <SymbolView
+                name={{ ios: savedId ? 'bookmark.fill' : 'bookmark', android: 'bookmark', web: 'bookmark' }}
+                tintColor={savedId ? colors.green700 : colors.white}
+                size={16}
+              />
             )}
+            <Text style={[styles.saveText, savedId && !saving && styles.saveTextSaved]}>{label}</Text>
           </Pressable>
         ) : null}
       </View>
@@ -109,8 +113,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     flexDirection: 'row',
     gap: 4,
+    minHeight: 32,
     paddingHorizontal: 10,
     paddingVertical: 6,
+  },
+  saveBtnSaved: {
+    backgroundColor: colors.white,
+    borderColor: colors.white,
   },
   saveBtnPressed: {
     backgroundColor: 'rgba(255,255,255,0.1)',
@@ -119,6 +128,9 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontSize: 13,
     fontWeight: '600',
+  },
+  saveTextSaved: {
+    color: colors.green700,
   },
   body: {
     gap: spacing.sm,
