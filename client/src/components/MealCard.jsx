@@ -1,5 +1,10 @@
 export function MealCard({ meal, savedId, onSave, onUnsave, saving }) {
   const showSave = onSave || onUnsave;
+  const label = saving
+    ? (savedId ? 'Removing…' : 'Saving…')
+    : savedId
+      ? 'Saved'
+      : 'Save recipe';
 
   return (
     <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-md">
@@ -8,11 +13,17 @@ export function MealCard({ meal, savedId, onSave, onUnsave, saving }) {
         {showSave && (
           <button
             type="button"
-            className={`btn btn-sm shrink-0 ${savedId ? 'btn-white' : 'btn-ghost border border-white/40 text-white hover:bg-white/10'}`}
+            className={`btn btn-sm shrink-0 ${
+              savedId && !saving
+                ? 'btn-white'
+                : 'btn-ghost border border-white/40 text-white hover:bg-white/10'
+            }`}
             onClick={savedId ? onUnsave : onSave}
             disabled={saving}
+            aria-busy={saving || undefined}
+            aria-label={savedId ? 'Remove saved recipe' : 'Save recipe'}
           >
-            {saving ? 'Saving...' : savedId ? 'Saved' : 'Save recipe'}
+            {label}
           </button>
         )}
       </div>

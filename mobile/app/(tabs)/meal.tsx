@@ -314,12 +314,14 @@ export default function MealScreen() {
           {meals?.map((meal, i) => {
             const key = mealKey(meal.name, meal.recipe);
             const savedId = savedByKey.get(key) ?? null;
+            const isSaving =
+              savingKey != null && (savingKey === key || savingKey === savedId);
             return (
               <View key={i} style={styles.mealWrap}>
                 <MealCard
                   meal={meal}
                   savedId={savedId}
-                  saving={savingKey === key || savingKey === savedId}
+                  saving={isSaving}
                   onSave={() => saveMeal(meal)}
                   onUnsave={() => savedId && unsaveMeal(savedId)}
                 />

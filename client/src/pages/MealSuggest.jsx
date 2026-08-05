@@ -284,12 +284,14 @@ export default function MealSuggest() {
               {meals.map((meal, i) => {
                 const key = mealKey(meal.name, meal.recipe);
                 const savedId = savedByKey.get(key) ?? null;
+                const isSaving =
+                  savingKey != null && (savingKey === key || savingKey === savedId);
                 return (
                   <MealCard
                     key={i}
                     meal={meal}
                     savedId={savedId}
-                    saving={savingKey === key || savingKey === savedId}
+                    saving={isSaving}
                     onSave={() => saveMeal(meal)}
                     onUnsave={() => unsaveMeal(savedId)}
                   />
