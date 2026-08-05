@@ -41,6 +41,10 @@ export async function apiFetch(path: string, options: RequestInit = {}) {
   try {
     let res = await send(token);
 
+    if (__DEV__) {
+      console.log(`[api] ${options.method ?? 'GET'} ${path} → ${res.status}`);
+    }
+
     if (res.status === 401 && token && typeof auth.getSession === 'function') {
       const { data } = await auth.getSession();
       const fresh = (data?.session as { token?: string } | undefined)?.token ?? null;

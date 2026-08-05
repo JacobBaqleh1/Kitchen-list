@@ -29,9 +29,9 @@ export const auth = createAuthClient(NEON_AUTH_URL, {
         const data = ctx?.data;
         const token = data?.session?.token;
         if (token && data?.user) {
-          if (shouldIgnoreAuthSession(token)) return;
-          void clearSignedOutState();
+          // Fresh login supersedes any prior explicit sign-out (matches web auth.js).
           clearExplicitSignOut();
+          void clearSignedOutState();
           persistSession({ session: data.session, user: data.user });
           markPersistedValidationValid(token);
           notifyPersistedSession();
@@ -108,7 +108,7 @@ function shouldIgnoreAuthSession(token: string) {
     if (!explicitSignOut.token || explicitSignOut.token === token) return true;
   }
   if (signedOutFlagCache === true) {
-    if (!signedOutTokenCache || signedOutTokenCache === token) return true;
+    if (signedOutTokenCache && signedOutTokenCache === token) return true;
   }
   return false;
 }

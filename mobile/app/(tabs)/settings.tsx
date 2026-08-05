@@ -176,9 +176,9 @@ export default function SettingsScreen() {
 
       <SectionLabel>Data</SectionLabel>
       <Card style={styles.card}>
-        <Text style={styles.cardTitle}>Saved meal suggestions</Text>
+        <Text style={styles.cardTitle}>Recent meal suggestions</Text>
         <Button
-          title="Clear saved meals"
+          title="Clear recent suggestions"
           variant="secondary"
           small
           onPress={async () => {
@@ -250,7 +250,7 @@ export default function SettingsScreen() {
       </Card>
 
       {saved ? <Text style={styles.flash}>✓ Saved</Text> : null}
-      {cacheCleared ? <Text style={styles.flash}>✓ Saved meals cleared</Text> : null}
+      {cacheCleared ? <Text style={styles.flash}>✓ Recent suggestions cleared</Text> : null}
     </ScrollView>
   );
 }

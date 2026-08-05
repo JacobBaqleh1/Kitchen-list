@@ -1,17 +1,52 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { SymbolView } from 'expo-symbols';
 import { colors, spacing } from '@/src/theme';
 
 type Meal = {
   name: string;
   recipe: string[];
   shopping_list?: string[];
+  shoppingList?: string[];
 };
 
-export function MealCard({ meal }: { meal: Meal }) {
+type Props = {
+  meal: Meal;
+  savedId?: string | null;
+  onSave?: () => void;
+  onUnsave?: () => void;
+  saving?: boolean;
+};
+
+export function MealCard({ meal, savedId, onSave, onUnsave, saving }: Props) {
+  const showSave = onSave || onUnsave;
+  const shoppingList = meal.shopping_list ?? meal.shoppingList;
+
   return (
     <View style={styles.card}>
       <View style={styles.header}>
         <Text style={styles.title}>{meal.name}</Text>
+        {showSave ? (
+          <Pressable
+            style={({ pressed }) => [styles.saveBtn, pressed && styles.saveBtnPressed]}
+            onPress={savedId ? onUnsave : onSave}
+            disabled={saving}
+            accessibilityRole="button"
+            accessibilityLabel={savedId ? 'Remove saved recipe' : 'Save recipe'}
+          >
+            {saving ? (
+              <ActivityIndicator color={colors.white} size="small" />
+            ) : (
+              <>
+                <SymbolView
+                  name={{ ios: savedId ? 'bookmark.fill' : 'bookmark', android: 'bookmark', web: 'bookmark' }}
+                  tintColor={colors.white}
+                  size={16}
+                />
+                <Text style={styles.saveText}>{savedId ? 'Saved' : 'Save'}</Text>
+              </>
+            )}
+          </Pressable>
+        ) : null}
       </View>
       <View style={styles.body}>
         <Text style={styles.label}>Recipe</Text>
@@ -23,11 +58,11 @@ export function MealCard({ meal }: { meal: Meal }) {
             <Text style={styles.stepText}>{step}</Text>
           </View>
         ))}
-        {meal.shopping_list && meal.shopping_list.length > 0 ? (
+        {shoppingList && shoppingList.length > 0 ? (
           <>
             <Text style={[styles.label, { marginTop: spacing.lg }]}>Shopping list</Text>
             <View style={styles.tags}>
-              {meal.shopping_list.map((item, i) => (
+              {shoppingList.map((item, i) => (
                 <View key={i} style={styles.tag}>
                   <Text style={styles.tagText}>{item}</Text>
                 </View>
@@ -53,14 +88,37 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   header: {
+    alignItems: 'flex-start',
     backgroundColor: colors.green600,
+    flexDirection: 'row',
+    gap: spacing.sm,
+    justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
   },
   title: {
     color: colors.white,
+    flex: 1,
     fontSize: 18,
     fontWeight: '700',
+  },
+  saveBtn: {
+    alignItems: 'center',
+    borderColor: 'rgba(255,255,255,0.4)',
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  saveBtnPressed: {
+    backgroundColor: 'rgba(255,255,255,0.1)',
+  },
+  saveText: {
+    color: colors.white,
+    fontSize: 13,
+    fontWeight: '600',
   },
   body: {
     gap: spacing.sm,

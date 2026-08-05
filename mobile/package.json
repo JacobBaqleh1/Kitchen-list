@@ -37,6 +37,7 @@
   },
   "scripts": {
     "start": "expo start",
+    "dev:ios": "expo start --ios --clear",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web"

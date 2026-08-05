@@ -10,6 +10,7 @@ import mealRouter from './routes/meal.js';
 import photosRouter from './routes/photos.js';
 import sharesRouter from './routes/shares.js';
 import accountRouter from './routes/account.js';
+import savedMealsRouter from './routes/savedMeals.js';
 import { requireAuth } from './middleware/auth.js';
 import { initShareChat } from './ws/shareChat.js';
 
@@ -39,6 +40,7 @@ app.use('/api/meal', mealRouter);
 app.use('/api/photos', photosRouter);
 app.use('/api/shares', sharesRouter);
 app.use('/api/account', accountRouter);
+app.use('/api/saved-meals', savedMealsRouter);
 
 // Authoritative session check: verifies the bearer token server-side and echoes
 // the user it resolves to. Clients (notably the iOS standalone PWA, which can

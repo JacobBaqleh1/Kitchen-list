@@ -32,11 +32,8 @@ export default function SignInScreen() {
     try {
       await auth.signIn.email({ email: email.trim(), password });
       router.replace('/(tabs)');
-    } catch (e) {
-      // onError handler surfaces message
-      if (!authError) {
-        clearAuthError();
-      }
+    } catch {
+      // onError handler surfaces message via useAuthError
     } finally {
       setLoading(false);
     }

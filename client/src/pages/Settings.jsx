@@ -220,12 +220,12 @@ export default function Settings() {
       <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-500">Data</h2>
 
       <div className="mb-6 rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-        <div className="mb-0.5 font-semibold text-gray-900">Saved meal suggestions</div>
+        <div className="mb-0.5 font-semibold text-gray-900">Recent meal suggestions</div>
         <div className="mb-3 text-sm text-gray-500">
           Clear cached AI meal ideas from this browser session
         </div>
         <button type="button" className="btn btn-secondary btn-sm" onClick={handleClearMeals}>
-          Clear saved meals
+          Clear recent suggestions
         </button>
       </div>
 
@@ -312,7 +312,7 @@ export default function Settings() {
 
       <div className="mt-4 h-5">
         {saved && <span className="text-sm font-medium text-green-700">✓ Saved</span>}
-        {cacheCleared && <span className="text-sm font-medium text-green-700">✓ Saved meals cleared</span>}
+        {cacheCleared && <span className="text-sm font-medium text-green-700">✓ Recent suggestions cleared</span>}
       </div>
     </div>
   );

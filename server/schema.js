@@ -37,6 +37,17 @@ export const recipes = pgTable('recipes', {
   createdAt: timestamp('created_at').defaultNow(),
 });
 
+export const savedMeals = pgTable('saved_meals', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: text('user_id').notNull(),
+  name: text('name').notNull(),
+  recipe: text('recipe').array().notNull().default(sql`'{}'::text[]`),
+  shoppingList: text('shopping_list').array().default(sql`'{}'::text[]`),
+  createdAt: timestamp('created_at').defaultNow(),
+}, (t) => [
+  index('saved_meals_user_created_idx').on(t.userId, t.createdAt),
+]);
+
 export const preferences = pgTable('preferences', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: text('user_id').notNull().unique(),
