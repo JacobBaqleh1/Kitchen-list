@@ -8,7 +8,8 @@
       "autoIncrement": true,
       "env": {
         "EXPO_PUBLIC_API_URL": "https://kitchen-list.onrender.com",
-        "EXPO_PUBLIC_NEON_AUTH_URL": "https://ep-plain-star-a6cv8b1b.neonauth.us-west-2.aws.neon.tech/neondb/auth"
+        "EXPO_PUBLIC_NEON_AUTH_URL": "https://ep-plain-star-a6cv8b1b.neonauth.us-west-2.aws.neon.tech/neondb/auth",
+        "EXPO_PUBLIC_USE_RN_FETCH": "1"
       },
       "ios": {
         "resourceClass": "m-medium"
