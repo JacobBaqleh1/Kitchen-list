@@ -1,4 +1,3 @@
-import { auth } from './auth';
 import { API_URL } from './config';
 
 let authToken: string | null = null;
@@ -7,11 +6,8 @@ export function setAuthToken(token: string | null) {
   authToken = token ?? null;
 }
 
-async function currentToken() {
-  if (authToken) return authToken;
-  if (typeof auth.getSession !== 'function') return null;
-  const { data } = await auth.getSession();
-  return (data?.session as { token?: string } | undefined)?.token ?? null;
+export function getAuthToken() {
+  return authToken;
 }
 
 function formatApiError(path: string, res: Response, body: { error?: string }) {
@@ -19,50 +15,94 @@ function formatApiError(path: string, res: Response, body: { error?: string }) {
   return `${detail} (${path})`;
 }
 
+/**
+ * Authenticated API helper.
+ *
+ * Avoids auth.getSession() (better-fetch always attaches AbortController.signal)
+ * and never forwards `signal` — Expo SDK 56's winter fetch + incomplete RN
+ * AbortSignal has produced Hermes "undefined is not a function" on TestFlight.
+ * Uses .then() for the network call so a broken native await path cannot
+ * resolve the Response to undefined (expo/expo#45592).
+ */
 export async function apiFetch(path: string, options: RequestInit = {}) {
-  const token = await currentToken();
-  const isFormData = options.body instanceof FormData;
-
-  // Do not pass AbortController.signal here — RN/Expo's AbortSignal is incomplete
-  // and can throw "undefined is not a function" on authenticated requests.
-  const send = (bearer: string | null) =>
-    fetch(`${API_URL}${path}`, {
-      ...options,
-      headers: {
-        ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
-        ...(bearer ? { Authorization: `Bearer ${bearer}` } : {}),
-        ...(options.headers as Record<string, string> | undefined),
-      },
-    });
-
-  let res = await send(token);
-
-  if (__DEV__) {
-    console.log(`[api] ${options.method ?? 'GET'} ${path} → ${res.status}`);
+  const token = authToken;
+  if (!token) {
+    throw new Error(`Not authenticated (${path})`);
   }
 
-  if (res.status === 401 && token && typeof auth.getSession === 'function') {
-    const { data } = await auth.getSession();
-    const fresh = (data?.session as { token?: string } | undefined)?.token ?? null;
-    setAuthToken(fresh);
-    if (fresh && fresh !== token) res = await send(fresh);
+  // Drop any AbortSignal — callers and wrappers must not pass one on RN.
+  const { signal: _signal, headers: optionHeaders, ...rest } = options;
+  const isFormData = rest.body instanceof FormData;
+  const method = String(rest.method ?? 'GET').toUpperCase();
+  const headers: Record<string, string> = {
+    ...(optionHeaders as Record<string, string> | undefined),
+    Authorization: `Bearer ${token}`,
+  };
+  if (!isFormData && rest.body != null && method !== 'GET' && method !== 'HEAD') {
+    if (!headers['Content-Type'] && !headers['content-type']) {
+      headers['Content-Type'] = 'application/json';
+    }
+  }
+
+  let res: Response;
+  try {
+    res = await new Promise<Response>((resolve, reject) => {
+      fetch(`${API_URL}${path}`, { ...rest, method, headers })
+        .then((response) => {
+          if (response == null) {
+            reject(new Error(`Empty fetch response (${path})`));
+            return;
+          }
+          resolve(response);
+        })
+        .catch(reject);
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    throw new Error(`Network error (${path}): ${msg}`);
+  }
+
+  if (__DEV__) {
+    console.log(`[api] ${method} ${path} → ${res.status}`);
   }
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: res.statusText }));
     throw new Error(formatApiError(path, res, body));
   }
-  return res.json();
+
+  if (typeof res.json !== 'function') {
+    throw new Error(`Invalid response object (${path})`);
+  }
+
+  try {
+    return await res.json();
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    throw new Error(`JSON parse failed (${path}): ${msg}`);
+  }
 }
 
 export async function apiFetchPublic(path: string, options: RequestInit = {}) {
-  const res = await fetch(`${API_URL}${path}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(options.headers as Record<string, string> | undefined),
-    },
+  const { signal: _signal, headers: optionHeaders, ...rest } = options;
+  const res = await new Promise<Response>((resolve, reject) => {
+    fetch(`${API_URL}${path}`, {
+      ...rest,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(optionHeaders as Record<string, string> | undefined),
+      },
+    })
+      .then((response) => {
+        if (response == null) {
+          reject(new Error(`Empty fetch response (${path})`));
+          return;
+        }
+        resolve(response);
+      })
+      .catch(reject);
   });
+
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: res.statusText }));
     throw new Error(formatApiError(path, res, body));
