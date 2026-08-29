@@ -14,8 +14,6 @@ async function currentToken() {
   return (data?.session as { token?: string } | undefined)?.token ?? null;
 }
 
-const DEFAULT_TIMEOUT_MS = 30_000;
-
 function formatApiError(path: string, res: Response, body: { error?: string }) {
   const detail = body.error || res.statusText || `HTTP ${res.status}`;
   return `${detail} (${path})`;
@@ -24,13 +22,12 @@ function formatApiError(path: string, res: Response, body: { error?: string }) {
 export async function apiFetch(path: string, options: RequestInit = {}) {
   const token = await currentToken();
   const isFormData = options.body instanceof FormData;
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
 
+  // Do not pass AbortController.signal here — RN/Expo's AbortSignal is incomplete
+  // and can throw "undefined is not a function" on authenticated requests.
   const send = (bearer: string | null) =>
     fetch(`${API_URL}${path}`, {
       ...options,
-      signal: controller.signal,
       headers: {
         ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
         ...(bearer ? { Authorization: `Bearer ${bearer}` } : {}),
@@ -38,33 +35,24 @@ export async function apiFetch(path: string, options: RequestInit = {}) {
       },
     });
 
-  try {
-    let res = await send(token);
+  let res = await send(token);
 
-    if (__DEV__) {
-      console.log(`[api] ${options.method ?? 'GET'} ${path} → ${res.status}`);
-    }
-
-    if (res.status === 401 && token && typeof auth.getSession === 'function') {
-      const { data } = await auth.getSession();
-      const fresh = (data?.session as { token?: string } | undefined)?.token ?? null;
-      setAuthToken(fresh);
-      if (fresh && fresh !== token) res = await send(fresh);
-    }
-
-    if (!res.ok) {
-      const body = await res.json().catch(() => ({ error: res.statusText }));
-      throw new Error(formatApiError(path, res, body));
-    }
-    return res.json();
-  } catch (err) {
-    if (err instanceof Error && err.name === 'AbortError') {
-      throw new Error(`Request timed out (${path})`);
-    }
-    throw err;
-  } finally {
-    clearTimeout(timeout);
+  if (__DEV__) {
+    console.log(`[api] ${options.method ?? 'GET'} ${path} → ${res.status}`);
   }
+
+  if (res.status === 401 && token && typeof auth.getSession === 'function') {
+    const { data } = await auth.getSession();
+    const fresh = (data?.session as { token?: string } | undefined)?.token ?? null;
+    setAuthToken(fresh);
+    if (fresh && fresh !== token) res = await send(fresh);
+  }
+
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(formatApiError(path, res, body));
+  }
+  return res.json();
 }
 
 export async function apiFetchPublic(path: string, options: RequestInit = {}) {
