@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import * as Sentry from '@sentry/node';
 import express from 'express';
 import cors from 'cors';
 import { createServer } from 'http';
@@ -11,7 +12,9 @@ import photosRouter from './routes/photos.js';
 import sharesRouter from './routes/shares.js';
 import accountRouter from './routes/account.js';
 import savedMealsRouter from './routes/savedMeals.js';
+import securityRouter from './routes/security.js';
 import { requireAuth } from './middleware/auth.js';
+import { securityResponseLogger } from './middleware/securityEvents.js';
 import { initShareChat } from './ws/shareChat.js';
 
 const app = express();
@@ -33,6 +36,7 @@ app.use(cors({
   credentials: true,
 }));
 app.use(express.json());
+app.use(securityResponseLogger);
 
 app.use('/api/items', itemsRouter);
 app.use('/api/preferences', preferencesRouter);
@@ -41,6 +45,7 @@ app.use('/api/photos', photosRouter);
 app.use('/api/shares', sharesRouter);
 app.use('/api/account', accountRouter);
 app.use('/api/saved-meals', savedMealsRouter);
+app.use('/api/security', securityRouter);
 
 // Authoritative session check: verifies the bearer token server-side and echoes
 // the user it resolves to. Clients (notably the iOS standalone PWA, which can
@@ -71,6 +76,9 @@ app.get('/health', async (_, res) => {
     res.status(503).json({ status: 'degraded', db: 'error', ...base });
   }
 });
+
+// Sentry error handler after routes so uncaught route errors become Issues.
+Sentry.setupExpressErrorHandler(app);
 
 // Wrap Express in a bare HTTP server so the WebSocket chat can share the same
 // port (Render exposes a single port and supports WS over the same listener).

@@ -2,6 +2,33 @@ import { useCallback, useEffect, useSyncExternalStore } from 'react';
 import { createAuthClient } from '@neondatabase/neon-js/auth';
 import { BetterAuthReactAdapter } from '@neondatabase/auth/react';
 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+
+// Track the latest auth HTTP URL so onError can tell sign-in failures apart
+// from refresh / session noise (Neon Auth is outside our API).
+let lastAuthRequestUrl = '';
+
+function reportFailedLogin({ status, reason }) {
+  try {
+    void fetch(`${API_BASE}/api/security/login-failure`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        status: status || null,
+        reason: reason ? String(reason).slice(0, 120) : null,
+        source: 'web',
+      }),
+      keepalive: true,
+    }).catch(() => {});
+  } catch {
+    /* never let security reporting break auth */
+  }
+}
+
+function isSignInRequest(url) {
+  return /sign-in|signin|sign_in|\/login/i.test(String(url || ''));
+}
+
 export const auth = createAuthClient(import.meta.env.VITE_NEON_AUTH_URL, {
   adapter: BetterAuthReactAdapter(),
   fetchOptions: {
@@ -11,7 +38,8 @@ export const auth = createAuthClient(import.meta.env.VITE_NEON_AUTH_URL, {
     // the reliable interception point and runs no matter how sign-out fires.
     onRequest: (request) => {
       try {
-        if (String(request?.url ?? '').includes('/sign-out')) beginExplicitSignOut();
+        lastAuthRequestUrl = String(request?.url ?? '');
+        if (lastAuthRequestUrl.includes('/sign-out')) beginExplicitSignOut();
       } catch {
         /* never let interception break the request */
       }
@@ -49,6 +77,9 @@ export const auth = createAuthClient(import.meta.env.VITE_NEON_AUTH_URL, {
           ctx?.error?.statusText ||
           (status ? `Request failed (${status})` : 'Network request failed');
         notifyAuthError(message);
+        if (isSignInRequest(lastAuthRequestUrl)) {
+          reportFailedLogin({ status, reason: message });
+        }
       } catch {
         /* never let error reporting break the auth flow */
       }
@@ -83,7 +114,6 @@ export function useAuthError() {
   return useSyncExternalStore(subscribeAuthError, getAuthErrorSnapshot, () => null);
 }
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 const IOS_STANDALONE_SESSION_KEY = 'mykitchenlist.iosStandaloneSession';
 const EXPIRY_SKEW_MS = 30_000;
 

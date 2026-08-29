@@ -5,3 +5,6 @@ dist
 .DS_Store
 drizzle/
 .vercel
+.swarmforge/
+.worktrees/
+swarmforge/scripts/

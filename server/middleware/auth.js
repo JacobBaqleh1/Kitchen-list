@@ -1,4 +1,5 @@
 import { createRemoteJWKSet, jwtVerify } from 'jose';
+import { logAuthRejected } from '../lib/securityLog.js';
 
 const JWKS = createRemoteJWKSet(
   new URL(process.env.NEON_AUTH_JWKS_URL)
@@ -24,10 +25,17 @@ export async function verifyToken(token) {
 
 export async function requireAuth(req, res, next) {
   const token = req.headers.authorization?.split(' ')[1];
-  if (!token) return res.status(401).json({ error: 'Unauthorized' });
+  if (!token) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
 
   const user = await verifyToken(token);
-  if (!user) return res.status(401).json({ error: 'Invalid or expired token' });
+  if (!user) {
+    // Presented a bearer token that failed verification — more security-relevant
+    // than a bare missing Authorization header (bots hit those constantly).
+    logAuthRejected(req, { reason: 'invalid_token', statusCode: 401 });
+    return res.status(401).json({ error: 'Invalid or expired token' });
+  }
 
   req.user = user;
   next();

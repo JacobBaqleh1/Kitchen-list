@@ -40,6 +40,10 @@ Required env vars (see `server/.env.example` / `client/.env.example`):
   — only for `/api/meal/suggest` and `/api/photos/scan`.
 - **Box**: `BOX_*` — only for `/api/photos/scan` uploads. The `BOX_PRIVATE_KEY`
   value keeps literal `\n` sequences in `.env`; the app converts them at runtime.
+- **Sentry** (optional locally): `SENTRY_DSN` on the server. When set, the API
+  loads via `node --import ./instrument.mjs` and emits structured security logs
+  (failed logins, 403s, rate limits) plus Issues for failed-login spikes. See
+  `docs/MONITORING.md`.
 
 Note: `npm run db:push` against the live Neon DB is destructive-ish (alters the
 shared schema). The production schema already exists, so avoid running it unless

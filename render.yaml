@@ -4,7 +4,7 @@ services:
     env: node
     rootDir: server
     buildCommand: npm install
-    startCommand: node index.js
+    startCommand: node --import ./instrument.mjs index.js
     envVars:
       - key: NODE_ENV
         value: production
@@ -18,3 +18,7 @@ services:
         sync: false
       - key: APP_BASE_URL
         sync: false
+      - key: SENTRY_DSN
+        sync: false
+      - key: SENTRY_ENVIRONMENT
+        value: production

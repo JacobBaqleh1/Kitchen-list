@@ -10,7 +10,26 @@ MyKitchenList runs on managed services. You do not need to run your own monitori
 | API CPU, memory, restarts | [Render dashboard](https://dashboard.render.com) → `kitchenlist-api` → Metrics | Single-instance saturation, OOM, crash loops |
 | DB compute & connections | [Neon console](https://console.neon.tech) → your project → Monitoring | Query latency, compute usage, storage |
 | Web traffic & Web Vitals | [Vercel dashboard](https://vercel.com) → Analytics / Speed Insights | Frontend errors and slow pages (already enabled in the client) |
+| Errors, traces, security logs | [Sentry](https://sentry.io) → kitchenlist API project | Uncaught exceptions, structured security events, failed-login spikes |
 | Downtime alerts | [UptimeRobot](https://uptimerobot.com) (or similar) | Email/SMS when `/health` stops returning 200 |
+
+## Sentry (API)
+
+Set `SENTRY_DSN` on the Render service (see `server/.env.example`). The API loads `instrument.mjs` before the app so Express is auto-instrumented, enables Sentry Logs, and reports:
+
+| Event | How it is produced | Sentry surface |
+|-------|--------------------|----------------|
+| `security.failed_login` | Web/mobile clients `POST /api/security/login-failure` after a Neon Auth sign-in error | Logs (warn) |
+| `security.failed_login_spike` | ≥20 failed logins from one IP within 5 minutes | Logs (error) + Issue (`captureMessage`) |
+| `security.forbidden` | Any HTTP 403 response | Logs (warn) |
+| `security.rate_limit` | LLM route rate-limit handler (429) | Logs (warn) |
+| `security.auth_rejected` | Bearer token present but JWT verify failed | Logs (warn) |
+
+Structured events are also written as JSON lines to stdout (visible in Render logs) even when `SENTRY_DSN` is unset.
+
+### Recommended Sentry alert
+
+In Sentry → Alerts, create an issue alert for messages matching `Failed login spike` (or tag `security.event:failed_login_spike`) and notify email/Slack. The API already fingerprints spikes per IP so repeats in the same window collapse into one issue.
 
 ## Health endpoint
 
@@ -64,7 +83,7 @@ In Neon → project → **Settings → Integrations** (or Monitoring), watch:
 
 - Custom Grafana/Prometheus — overkill until you outgrow a single Render instance.
 - WebSocket-specific monitoring — chat is in-memory on one process; if you add a second Render instance later, watch for “messages only appear after refresh” (sign you need Redis pub/sub).
-- Log aggregation (Datadog, etc.) — add when debugging production issues becomes painful.
+- Full log aggregation (Datadog, etc.) — Sentry Logs covers security events; add a broader log stack when debugging production issues becomes painful.
 
 ## When to act
 
@@ -74,3 +93,4 @@ In Neon → project → **Settings → Integrations** (or Monitoring), watch:
 | Slow meal suggestions | Bedrock quota/latency | Check AWS CloudWatch for Bedrock; rate limits are 20/10min per user |
 | Render restarts often | OOM from photo scans | Upgrade Render plan RAM |
 | Site loads but API 502 | Render service sleeping (free tier) or crashed | Upgrade to paid Render or increase health ping frequency |
+| Sentry `failed_login_spike` | Credential stuffing / brute force from one IP | Confirm in Logs by IP; block at CDN/WAF or rate-limit Neon Auth if available |

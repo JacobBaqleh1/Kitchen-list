@@ -1,4 +1,5 @@
 import rateLimit, { ipKeyGenerator } from 'express-rate-limit';
+import { logRateLimitHit } from '../lib/securityLog.js';
 
 // Per-user rate limiter for the expensive LLM-backed routes (meal suggestions,
 // photo scans). Keyed by authenticated user id, so it must be mounted AFTER
@@ -11,7 +12,16 @@ export function llmRateLimit({ windowMs, max, message }) {
     standardHeaders: true,
     legacyHeaders: false,
     keyGenerator: (req) => req.user?.id || ipKeyGenerator(req.ip),
-    handler: (_req, res) =>
-      res.status(429).json({ error: message || 'Too many requests — please slow down and try again shortly.' }),
+    handler: (req, res) => {
+      logRateLimitHit(req, {
+        statusCode: 429,
+        windowMs,
+        max,
+        limitKey: req.user?.id ? 'user' : 'ip',
+      });
+      res.status(429).json({
+        error: message || 'Too many requests — please slow down and try again shortly.',
+      });
+    },
   });
 }
