@@ -14,12 +14,35 @@ export type SessionData = {
   user?: { id?: string | number; name?: string | null; email?: string };
 } | null;
 
+let lastAuthRequestUrl = '';
+
+function reportFailedLogin({ status, reason }: { status?: number; reason?: string }) {
+  try {
+    void fetch(`${API_URL}/api/security/login-failure`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        status: status || null,
+        reason: reason ? String(reason).slice(0, 120) : null,
+        source: 'mobile',
+      }),
+    }).catch(() => {});
+  } catch {
+    /* never let security reporting break auth */
+  }
+}
+
+function isSignInRequest(url: string) {
+  return /sign-in|signin|sign_in|\/login/i.test(String(url || ''));
+}
+
 export const auth = createAuthClient(NEON_AUTH_URL, {
   adapter: BetterAuthReactAdapter(),
   fetchOptions: {
     onRequest: (request: { url?: string }) => {
       try {
-        if (String(request?.url ?? '').includes('/sign-out')) beginExplicitSignOut();
+        lastAuthRequestUrl = String(request?.url ?? '');
+        if (lastAuthRequestUrl.includes('/sign-out')) beginExplicitSignOut();
       } catch {
         /* ignore */
       }
@@ -49,6 +72,9 @@ export const auth = createAuthClient(NEON_AUTH_URL, {
           ctx?.error?.statusText ||
           (status ? `Request failed (${status})` : 'Network request failed');
         notifyAuthError(message);
+        if (isSignInRequest(lastAuthRequestUrl)) {
+          reportFailedLogin({ status, reason: message });
+        }
       } catch {
         /* ignore */
       }
