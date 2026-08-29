@@ -8,11 +8,9 @@ export function SessionTokenSync() {
   const token = data?.session?.token ?? null;
   const userId = data?.user?.id != null ? String(data.user.id) : null;
 
-  // Parent effect runs before child effects so the API module has the token
-  // before FridgeScreen fetches items.
-  useEffect(() => {
-    setAuthToken(token);
-  }, [token]);
+  // Set during render so sibling/child effects can fetch immediately
+  // (no getSession wait / useEffect race). Matches web SessionTokenSync.
+  setAuthToken(token);
 
   useEffect(() => {
     if (token && userId) {
