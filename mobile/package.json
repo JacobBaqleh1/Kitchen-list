@@ -33,7 +33,11 @@
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
+    "babel-preset-expo": "~56.0.20",
     "typescript": "~6.0.3"
+  },
+  "overrides": {
+    "babel-preset-expo": "~56.0.20"
   },
   "scripts": {
     "start": "expo start",

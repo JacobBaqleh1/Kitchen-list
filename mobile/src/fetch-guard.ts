@@ -3,9 +3,11 @@
  * better-auth/better-fetch always attaches one, and RN's AbortSignal polyfill
  * is incomplete (Hermes can throw "undefined is not a function").
  *
- * Prefer React Native's XHR fetch via EXPO_PUBLIC_USE_RN_FETCH=1 in eas.json
- * (Expo winter/native fetch has caused iOS production await/fetch bugs).
+ * Forces React Native's XHR fetch (EXPO_PUBLIC_USE_RN_FETCH) before Expo boots —
+ * Expo SDK 56's winter/native fetch has caused iOS production await/fetch bugs
+ * and breaks `{ uri, name, type }` FormData photo uploads.
  */
+import './rn-fetch-env';
 import 'expo';
 
 const g = globalThis as typeof globalThis & { fetch: typeof fetch };

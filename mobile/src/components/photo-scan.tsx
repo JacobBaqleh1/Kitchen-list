@@ -57,9 +57,17 @@ export function PhotoScan({
       } as unknown as Blob);
       form.append('type', type);
       const data = await apiFetch('/api/photos/scan', { method: 'POST', body: form });
+      if (!Array.isArray(data?.items)) {
+        throw new Error('Unexpected scan response from server');
+      }
       setDetected(data.items.map((i: DetectedItem) => ({ ...i, location })));
-    } catch {
-      setError('Could not read photo, please try again.');
+    } catch (e) {
+      const detail = e instanceof Error ? e.message : '';
+      setError(
+        detail
+          ? `Could not read photo — ${detail}`
+          : 'Could not read photo, please try again.',
+      );
     } finally {
       setScanning(false);
     }
