@@ -123,9 +123,13 @@ export function PhotoScan({ onItemsConfirmed, location }) {
       form.append('image', file);
       form.append('type', type);
       const data = await apiFetch('/api/photos/scan', { method: 'POST', body: form });
+      if (!Array.isArray(data?.items)) {
+        throw new Error('Unexpected scan response from server');
+      }
       setDetected(data.items.map(i => ({ ...i, location })));
-    } catch {
-      setError('Could not read photo, please try again.');
+    } catch (e) {
+      const detail = e instanceof Error ? e.message : '';
+      setError(detail ? `Could not read photo — ${detail}` : 'Could not read photo, please try again.');
     } finally {
       setScanning(false);
     }
@@ -156,9 +160,13 @@ export function PhotoScan({ onItemsConfirmed, location }) {
         method: 'POST',
         body: JSON.stringify({ text: textInput }),
       });
+      if (!Array.isArray(data?.items)) {
+        throw new Error('Unexpected parse response from server');
+      }
       setDetected(data.items.map(i => ({ ...i, location })));
-    } catch {
-      setError('Could not parse text, please try again.');
+    } catch (e) {
+      const detail = e instanceof Error ? e.message : '';
+      setError(detail ? `Could not parse text — ${detail}` : 'Could not parse text, please try again.');
     } finally {
       setParsingText(false);
     }
