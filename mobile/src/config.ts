@@ -13,3 +13,9 @@ export const NEON_AUTH_URL =
   process.env.EXPO_PUBLIC_NEON_AUTH_URL ||
   (extra.neonAuthUrl as string | undefined) ||
   '';
+
+/** Public web origin used as the HTTPS OAuth bridge for mobile social sign-in. */
+export const APP_WEB_ORIGIN =
+  process.env.EXPO_PUBLIC_WEB_ORIGIN ||
+  (extra.webOrigin as string | undefined) ||
+  'https://mykitchenlist.app';

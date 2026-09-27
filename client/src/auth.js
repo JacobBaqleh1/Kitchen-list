@@ -72,10 +72,19 @@ export const auth = createAuthClient(import.meta.env.VITE_NEON_AUTH_URL, {
     onError: (ctx) => {
       try {
         const status = ctx?.response?.status;
-        const message =
+        const bodyError =
+          ctx?.error?.error ||
           ctx?.error?.message ||
-          ctx?.error?.statusText ||
-          (status ? `Request failed (${status})` : 'Network request failed');
+          ctx?.error?.statusText;
+        // Neon returns { error, code } for disabled providers; better-auth may
+        // surface only "HTTP 400" — prefer the explicit server message.
+        let message = bodyError || (status ? `Request failed (${status})` : 'Network request failed');
+        if (message === `HTTP ${status}` || message === `Request failed (${status})`) {
+          const code = ctx?.error?.code;
+          if (code === 'PROVIDER_NOT_SUPPORTED' || /provider is not supported/i.test(String(ctx?.error?.error || ''))) {
+            message = 'That sign-in provider is not enabled yet. Try email or another provider.';
+          }
+        }
         notifyAuthError(message);
         if (isSignInRequest(lastAuthRequestUrl)) {
           reportFailedLogin({ status, reason: message });

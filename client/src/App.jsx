@@ -15,6 +15,7 @@ import Settings from './pages/Settings';
 import SharePage from './pages/SharePage';
 import SharedListView from './pages/SharedListView';
 import PrivacyPolicy from './pages/PrivacyPolicy';
+import MobileAuthCallback from './pages/MobileAuthCallback';
 
 const navLinkBase =
   'flex-1 sm:flex-initial text-center sm:text-left rounded-md px-2 sm:px-3 py-1.5 text-sm font-medium no-underline cursor-pointer select-none transition-colors';
@@ -232,7 +233,7 @@ function AuthPage() {
                 {authError}
               </div>
             )}
-            <AuthView path={path} />
+            <AuthView path={path} socialLayout="vertical" />
             <p className="mt-6 text-center text-xs text-gray-500">
               <Link to="/privacy" className="text-gray-500 no-underline hover:text-green-600">
                 Privacy Policy
@@ -267,6 +268,7 @@ function AppWithAuth() {
       <SessionTokenSync />
       <AppChrome />
       <Routes>
+        <Route path="/auth/mobile-callback" element={<MobileAuthCallback />} />
         <Route path="/auth/*" element={<AuthPage />} />
         <Route path="/privacy" element={<PrivacyPolicy />} />
         <Route path="/s/:token" element={<SharedListView />} />

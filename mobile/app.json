@@ -54,6 +54,7 @@
     "extra": {
       "apiUrl": "https://kitchen-list.onrender.com",
       "neonAuthUrl": "https://ep-plain-star-a6cv8b1b.neonauth.us-west-2.aws.neon.tech/neondb/auth",
+      "webOrigin": "https://mykitchenlist.app",
       "router": {},
       "eas": {
         "projectId": "2951500a-12ae-463a-868b-1424139cd6e3"
