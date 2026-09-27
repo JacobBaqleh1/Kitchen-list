@@ -10,7 +10,8 @@ import {
 } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
-import { auth, clearAuthError, useAuthError } from '@/src/auth';
+import { auth, clearAuthError, setAuthError, useAuthError } from '@/src/auth';
+import { signInWithSocialProvider } from '@/src/social-auth';
 import { Button } from '@/src/components/button';
 import { Input } from '@/src/components/input';
 import { ErrorBanner } from '@/src/components/card';
@@ -43,13 +44,14 @@ export default function SignInScreen() {
     setSocialLoading(provider);
     clearAuthError();
     try {
-      await auth.signIn.social({
-        provider,
-        callbackURL: 'mykitchenlist://',
-      });
-      router.replace('/(tabs)');
-    } catch {
-      /* onError */
+      const result = await signInWithSocialProvider(provider);
+      if (!result.cancelled) {
+        router.replace('/(tabs)');
+      }
+    } catch (err) {
+      // Prefer the thrown message when the social helper fails before/without onError.
+      const message = err instanceof Error ? err.message : 'Social sign-in failed';
+      setAuthError(message);
     } finally {
       setSocialLoading(null);
     }
@@ -96,6 +98,7 @@ export default function SignInScreen() {
             variant="secondary"
             onPress={() => socialSignIn('google')}
             loading={socialLoading === 'google'}
+            disabled={!!socialLoading}
           />
           {Platform.OS === 'ios' ? (
             <Button
@@ -103,6 +106,7 @@ export default function SignInScreen() {
               variant="apple"
               onPress={() => socialSignIn('apple')}
               loading={socialLoading === 'apple'}
+              disabled={!!socialLoading}
             />
           ) : null}
           <Button
@@ -110,6 +114,7 @@ export default function SignInScreen() {
             variant="secondary"
             onPress={() => socialSignIn('github')}
             loading={socialLoading === 'github'}
+            disabled={!!socialLoading}
           />
 
           <Pressable style={styles.footer}>

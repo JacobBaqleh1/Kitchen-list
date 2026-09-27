@@ -64,13 +64,20 @@ export const auth = createAuthClient(NEON_AUTH_URL, {
         /* ignore */
       }
     },
-    onError: (ctx: { response?: { status?: number }; error?: { message?: string; statusText?: string } }) => {
+    onError: (ctx: { response?: { status?: number }; error?: { message?: string; statusText?: string; error?: string; code?: string } }) => {
       try {
         const status = ctx?.response?.status;
-        const message =
+        const bodyError =
+          ctx?.error?.error ||
           ctx?.error?.message ||
-          ctx?.error?.statusText ||
-          (status ? `Request failed (${status})` : 'Network request failed');
+          ctx?.error?.statusText;
+        let message = bodyError || (status ? `Request failed (${status})` : 'Network request failed');
+        if (message === `HTTP ${status}` || message === `Request failed (${status})`) {
+          const code = ctx?.error?.code;
+          if (code === 'PROVIDER_NOT_SUPPORTED' || /provider is not supported/i.test(String(ctx?.error?.error || ''))) {
+            message = 'That sign-in provider is not enabled yet. Try email or another provider.';
+          }
+        }
         notifyAuthError(message);
         if (isSignInRequest(lastAuthRequestUrl)) {
           reportFailedLogin({ status, reason: message });
@@ -81,7 +88,16 @@ export const auth = createAuthClient(NEON_AUTH_URL, {
     },
   },
 } as Parameters<typeof createAuthClient>[1]) as ReturnType<typeof createAuthClient> & {
-  signIn: { email: (args: { email: string; password: string }) => Promise<unknown>; social: (args: { provider: string; callbackURL: string }) => Promise<unknown> };
+  signIn: {
+    email: (args: { email: string; password: string }) => Promise<unknown>;
+    social: (args: {
+      provider: string;
+      callbackURL: string;
+      newUserCallbackURL?: string;
+      errorCallbackURL?: string;
+      disableRedirect?: boolean;
+    }) => Promise<unknown>;
+  };
   signUp: { email: (args: { email: string; password: string; name: string }) => Promise<unknown> };
   signOut: () => Promise<unknown>;
   deleteUser: (args?: { password?: string; callbackURL?: string }) => Promise<{ data?: { message?: string } }>;
@@ -94,6 +110,11 @@ const authErrorStore = { message: null as string | null, listeners: new Set<() =
 function notifyAuthError(message: string) {
   authErrorStore.message = message;
   for (const listener of authErrorStore.listeners) listener();
+}
+
+/** Surface an auth error from app code (e.g. social OAuth bridge failures). */
+export function setAuthError(message: string) {
+  notifyAuthError(message);
 }
 
 export function clearAuthError() {
@@ -244,6 +265,18 @@ export async function persistSession(sessionData: { session: unknown; user: unkn
   } catch {
     /* in-memory fallback */
   }
+}
+
+/** Apply a session captured from the mobile OAuth deep-link bridge. */
+export async function applySocialSession(sessionData: { session: unknown; user: unknown }) {
+  clearExplicitSignOut();
+  await clearSignedOutState();
+  await persistSession(sessionData);
+  const token = (sessionData as { session?: { token?: string } }).session?.token;
+  if (token) markPersistedValidationValid(token);
+  invalidateStoredSessionCache();
+  notifyPersistedSession();
+  clearAuthError();
 }
 
 const persistedValidation = {
