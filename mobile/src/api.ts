@@ -20,9 +20,11 @@ function formatApiError(path: string, res: Response, body: { error?: string }) {
  *
  * Avoids auth.getSession() (better-fetch always attaches AbortController.signal)
  * and never forwards `signal` — Expo SDK 56's winter fetch + incomplete RN
- * AbortSignal has produced Hermes "undefined is not a function" on TestFlight.
+ * AbortSignal has produced Hermes "undefined is not a function" on TestFlight
+ * (items list, photo scan, and other apiFetch callers share this path).
  * Uses .then() for the network call so a broken native await path cannot
  * resolve the Response to undefined (expo/expo#45592).
+ * RN XHR fetch is forced via EXPO_PUBLIC_USE_RN_FETCH (see fetch-guard / metro).
  */
 export async function apiFetch(path: string, options: RequestInit = {}) {
   const token = authToken;
